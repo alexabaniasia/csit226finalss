@@ -1,0 +1,121 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  font-family: "Inter", Helvetica, sans-serif;
+  background: #f8f9fa; 
+  color: #333;
+  min-height: 100vh;
+  line-height: 1.5;
+  position: relative;
+}
+
+.bg-image {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image: url('https://www.transparenttextures.com/patterns/cubes.png');
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Nunito", Helvetica, sans-serif;
+  color: #1a1a1a;
+  line-height: 1.2;
+}
+
+a {
+  text-decoration: none;
+  color: #8B2635;
+  transition: color 0.2s ease;
+}
+
+a:hover { color: #6e1e2a; }
+
+html { scrollbar-width: thin; scrollbar-gutter: stable; }
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(139, 38, 53, 0.4); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(139, 38, 53, 0.7); }
+
+.maroon-btn {
+  background: #8B2635;
+  color: #fff !important;
+  border: none;
+  border-radius: 6px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.maroon-btn:hover {
+  background: #731e2b;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 38, 53, 0.2);
+}
+
+.feature-card {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #eaeaea;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+  transition: all 0.25s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+  border-color: #d1d1d1;
+}
+
+input[type="text"], input[type="email"], input[type="password"],
+input[type="number"], select, textarea {
+  font-family: "Inter", sans-serif;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 15px;
+  color: #333;
+  outline: none;
+  background: #fff;
+}
+input:focus, select:focus, textarea:focus { border-color: #8B2635; }
+
+input[type="file"] {
+  display: block;
+  margin: 0 auto;
+  text-align: center;
+  color: #666;
+  font-size: 14px;
+}
+input[type="file"]::file-selector-button {
+  background: #8B2635;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-right: 15px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+input[type="file"]::file-selector-button:hover {
+  background: #731e2b;
+}
+
+.navbar-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
