@@ -1,121 +1,152 @@
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+/* =========================================
+  MAROON MARKET - UNIVERSAL STYLESHEET
+========================================= */
 
+/* --- Base & Scrollbar --- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body {
   font-family: "Inter", Helvetica, sans-serif;
-  background: #f8f9fa; 
-  color: #333;
+  background: #f0eded;
   min-height: 100vh;
-  line-height: 1.5;
-  position: relative;
+  color: #1a1a1a;
 }
+html { scrollbar-width: thin; scrollbar-gutter: stable; overflow-y: scroll; }
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(175, 83, 83, 0.4);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.35); }
+a { text-decoration: none; }
+button { cursor: pointer; font-family: inherit; }
 
+/* --- Layout Wrappers --- */
+.page { 
+  width: 100%; 
+  min-width: 1280px; 
+  margin: 0 auto; 
+  overflow: hidden; 
+  position: relative; 
+  padding-top: 60px; /* Offsets the exact height of the navbar */
+}
+.main { position: relative; z-index: 1; padding: 36px 80px 60px; }
+
+/* --- Universal Background Image Setup --- */
 .bg-image {
   position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  
+  /* Your CIT-U GLE Building Image */
+  background-image: url("https://cit.edu/wp-content/uploads/2023/07/GLE-Building.jpg");
+  background-position: center center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  
+  /* Softly desaturates the underlying photo to keep the colors from competing with your text */
+  filter: saturate(0.35) brightness(0.9);
+}
+
+/* Light, frosted white overlay to soften the background focus */
+.bg-image::after {
+  content: "";
+  position: absolute;
   inset: 0;
-  z-index: -1;
-  background-image: url('https://www.transparenttextures.com/patterns/cubes.png');
-  opacity: 0.4;
-  pointer-events: none;
+  background: rgba(245, 244, 244, 0.75); 
+  backdrop-filter: blur(5px);           
+  -webkit-backdrop-filter: blur(5px);
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: "Nunito", Helvetica, sans-serif;
-  color: #1a1a1a;
-  line-height: 1.2;
-}
-
-a {
-  text-decoration: none;
-  color: #8B2635;
-  transition: color 0.2s ease;
-}
-
-a:hover { color: #6e1e2a; }
-
-html { scrollbar-width: thin; scrollbar-gutter: stable; }
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(139, 38, 53, 0.4); border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(139, 38, 53, 0.7); }
-
-.maroon-btn {
-  background: #8B2635;
-  color: #fff !important;
-  border: none;
-  border-radius: 6px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
-
-.maroon-btn:hover {
-  background: #731e2b;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(139, 38, 53, 0.2);
-}
-
-.feature-card {
-  background: rgba(255, 255, 255, 0.95);
-  border: 1px solid #eaeaea;
-  border-radius: 12px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
-  transition: all 0.25s ease;
-}
-
-.feature-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
-  border-color: #d1d1d1;
-}
-
-input[type="text"], input[type="email"], input[type="password"],
-input[type="number"], select, textarea {
-  font-family: "Inter", sans-serif;
+/* --- Navigation --- */
+.navbar { 
+  background: #8B2635; 
+  height: 60px; 
+  display: flex; 
+  align-items: center; 
+  padding: 0 32px; 
+  position: fixed; 
+  top: 0;
+  left: 0;
   width: 100%;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 15px;
-  color: #333;
-  outline: none;
-  background: #fff;
-}
-input:focus, select:focus, textarea:focus { border-color: #8B2635; }
-
-input[type="file"] {
-  display: block;
-  margin: 0 auto;
-  text-align: center;
-  color: #666;
-  font-size: 14px;
-}
-input[type="file"]::file-selector-button {
-  background: #8B2635;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  margin-right: 15px;
-  font-weight: 600;
-  transition: background 0.2s;
-}
-input[type="file"]::file-selector-button:hover {
-  background: #731e2b;
+  z-index: 1000; 
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
 }
 
-.navbar-inner {
-  max-width: 1200px;
-  margin: 0 auto;
-  width: 100%;
-  display: flex;
-  align-items: center;
-}
+.navbar-inner { width: 100%; display: flex; align-items: center; justify-content: space-between; }
+.nav-links { display: flex; gap: 28px; }
+.nav-links a { color: rgba(255,255,255,0.82); font-size: 15px; font-weight: 500; }
+.nav-links a.active, .nav-links a:hover { color: #fff; font-weight: 700; }
+.nav-logo { position: absolute; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; }
+.nav-logo-icon { width: 47px; height: 47px; display: flex; align-items: center; justify-content: center; }
+.nav-logo-text { font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 26px; color: #fff; }
+.nav-icons { display: flex; align-items: center; gap: 14px; }
+.nav-icon-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: none; border: none; color: #fff; }
+.nav-icon-btn:hover { background: rgba(255,255,255,0.12); }
+.nav-auth-guest, .nav-auth-user { display: flex; align-items: center; gap: 14px; }
+.nav-auth-btn { font-size: 14px; font-weight: 600; padding: 8px 18px; border-radius: 8px; background: #fff; color: #8B2635; border: none; }
+.nav-auth-btn--outline { background: transparent; border: 1.5px solid rgba(255,255,255,0.6); color: #fff; }
+
+/* --- Footer --- */
+.site-footer { background: #1a1a1a; color: #fff; padding: 60px 80px 30px; position: relative; z-index: 10; margin-top: auto; }
+.footer-top { display: flex; justify-content: space-between; gap: 40px; margin-bottom: 60px; }
+.footer-brand { max-width: 300px; }
+.footer-logo-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.footer-logo-row img { width: 36px; height: 36px; }
+.footer-logo-row span { font-family: 'Nunito', sans-serif; font-size: 22px; font-weight: 800; }
+.footer-links h4 { font-size: 16px; font-weight: 700; margin-bottom: 20px; color: #fff; }
+.footer-links a { display: block; color: #aaa; margin-bottom: 12px; font-size: 14px; }
+.footer-links a:hover { color: #fff; }
+.footer-bottom { border-top: 1px solid rgba(255,255,255,0.1); padding-top: 30px; text-align: center; color: #888; font-size: 14px; }
+
+/* --- Buttons & Badges --- */
+.primary-btn { width: 100%; height: 48px; border: none; border-radius: 12px; background: #8B2635; color: #fff; font-weight: 700; font-size: 15px; transition: 0.2s; }
+.primary-btn:hover { background: #6e1e2a; transform: translateY(-1px); }
+.listing-badge { position: absolute; top: 12px; left: 12px; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; backdrop-filter: blur(4px); z-index: 2; }
+.badge-rent { background: rgba(241, 247, 255, 0.9); color: #4a79d6; border: 1px solid #d0e0f3; }
+.badge-sale { background: rgba(251, 244, 244, 0.9); color: #af5353; border: 1px solid #e9cfcf; }
+.badge-borrow { background: rgba(251, 247, 234, 0.9); color: #9a6b2b; border: 1px solid #e6dcc5; }
+
+/* --- Product Cards (Used in Home & Browse) --- */
+.product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
+.product-card { background: #fff; border-radius: 16px; overflow: hidden; border: 1px solid rgba(0,0,0,0.06); transition: transform 0.2s, box-shadow 0.2s; position: relative; }
+.product-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.08); }
+.product-img-wrap { width: 100%; aspect-ratio: 4 / 3; background: #eae5e5; position: relative; display: flex; align-items: center; justify-content: center; color: #aaa; }
+.product-body { padding: 16px; display: flex; flex-direction: column; gap: 4px; }
+.product-name { font-size: 16px; font-weight: 700; color: #1a1a1a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.product-meta { font-size: 13px; color: #888; }
+.product-price-row { display: flex; align-items: baseline; gap: 4px; margin-top: 8px; }
+.product-price { font-size: 18px; font-weight: 800; color: #1a1a1a; }
+.product-price-unit { font-size: 13px; color: #888; }
+
+/* --- Hero Section (Home) --- */
+.hero { position: relative; height: 640px; display: flex; flex-direction: column; align-items: center; overflow: hidden; }
+.hero-bg { position: absolute; inset: 0; background: url('https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=2000&q=80') center/cover; }
+.hero-tint { position: absolute; inset: 0; background: rgba(139, 38, 53, 0.85); mix-blend-mode: multiply; }
+.hero-content { position: relative; z-index: 10; text-align: center; margin-top: 140px; color: #fff; max-width: 800px; }
+.hero-title { font-family: 'Nunito', sans-serif; font-size: 56px; font-weight: 800; line-height: 1.1; margin-bottom: 24px; }
+.hero-subtitle { font-size: 20px; opacity: 0.9; margin-bottom: 40px; }
+.hero-btn { display: inline-block; background: #fff; color: #8B2635; padding: 16px 36px; border-radius: 12px; font-weight: 800; font-size: 16px; transition: 0.2s; }
+.hero-btn:hover { background: #f0f0f0; transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+
+/* --- Browse Layout --- */
+.content-card { background: rgba(250,250,250,0.92); border-radius: 24px; box-shadow: 0 4px 24px rgba(0,0,0,0.10); padding: 28px; display: flex; gap: 24px; align-items: flex-start; }
+.filter-sidebar { width: 260px; flex-shrink: 0; position: sticky; top: 24px; }
+.right-panel { flex: 1; min-width: 0; }
+.filter-title { font-size: 18px; font-weight: 800; margin-bottom: 20px; }
+.filter-group { margin-bottom: 20px; }
+.filter-group-label { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+.filter-checkbox { display: flex; align-items: center; gap: 8px; font-size: 14px; margin-bottom: 10px; cursor: pointer; }
+.filter-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; background: #fff; padding: 12px 16px; border-radius: 16px; border: 1px solid rgba(0,0,0,0.06); }
+.search-box { display: flex; align-items: center; gap: 10px; flex: 1; max-width: 400px; }
+.search-box input { border: none; outline: none; width: 100%; font-size: 15px; }
+
+/* Brings the Login, Register, and List Item forms to the front */
+.auth-main, .form-section { position: relative; z-index: 10; min-height: 80vh; display: flex; align-items: center; justify-content: center; }
+.auth-card, .form-card { position: relative; z-index: 10; }

@@ -1,7 +1,13 @@
 <?php
     session_start();
-    session_unset();
+    
+    // Unset all session variables
+    $_SESSION = array();
+    
+    // Destroy the session
     session_destroy();
     
-    echo "<script>alert('You have been logged out.'); window.location.href='login.php';</script>";
+    // Redirect to the homepage or login screen
+    header("Location: index.php");
+    exit();
 ?>

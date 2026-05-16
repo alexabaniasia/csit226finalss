@@ -1,124 +1,112 @@
-<?php 
-    $custom_css = 'style.css';
-    session_start();
+<?php
+    require_once 'includes/header.php';
+    include 'readrecords.php';
+
+    // Redirect to login if guest tries to access this page
     if(!isset($_SESSION['userID'])){
         header("Location: login.php");
-        exit;
-    }
-    
-    include 'connect.php'; 
-    require_once 'includes/header.php'; 
-    
-    $user_id = $_SESSION['userID'];
-
-   $cart_query = mysqli_query($connection, "SELECT cartID FROM carts WHERE userID = $user_id");
-    if(mysqli_num_rows($cart_query) == 0){
-        mysqli_query($connection, "INSERT INTO carts (userID) VALUES ($user_id)");
-        $cart_id = mysqli_insert_id($connection);
-    } else {
-        $cart_row = mysqli_fetch_assoc($cart_query);
-        $cart_id = $cart_row['cartID'];
+        exit();
     }
 
-    if(isset($_POST['action']) && $_POST['action'] == 'remove'){
-        $remove_id = $_POST['cartItemID'];
-        mysqli_query($connection, "DELETE FROM cart_items WHERE cartItemID = $remove_id AND cartID = $cart_id");
-        echo "<script>alert('Item removed from cart.');</script>";
+    // Block Admins from accessing marketplace user features
+    if(strtolower($_SESSION['role']) == 'admin'){
+        header("Location: admin.php");
+        exit();
     }
 
-    $items_query = "SELECT ci.cartItemID, ci.quantity, l.listingID, l.listingType, i.name, i.itemCondition 
-                    FROM cart_items ci, listings l, items i 
-                    WHERE ci.listingID = l.listingID 
-                    AND l.itemID = i.itemID 
-                    AND ci.cartID = $cart_id";
-    $items_result = mysqli_query($connection, $items_query);
-    $item_count = mysqli_num_rows($items_result);
+    // Handle removing item from cart
+    if(isset($_GET['remove_cart_id'])){
+        $cartItemID = intval($_GET['remove_cart_id']);
+        $userID = $_SESSION['userID'];
+        
+        // Correctly deletes the specific item from the cart_items table
+        $delete_sql = "DELETE ci FROM cart_items ci 
+                    JOIN carts c ON ci.cartID = c.cartID 
+                    WHERE ci.cartItemID = '$cartItemID' AND c.userID = '$userID'";
+        mysqli_query($connection, $delete_sql);
+        header("Location: cart.php"); // Refresh page
+        exit();
+    }
 
-    $subtotal = 0;
+    $cartItems = getUserCart($connection, $_SESSION['userID']);
+    $totalItems = mysqli_num_rows($cartItems);
+    $subtotal = 0.00;
 ?>
 
-<main style="max-width: 1100px; margin: 40px auto; padding: 20px;">
-  <div style="margin-bottom: 30px;">
-    <h1 style="color: #8B2635; margin: 0 0 5px 0; font-size: 32px;">Your Cart</h1>
-    <p style="color: #666; margin: 0; font-size: 16px;">Review items before you contact sellers or checkout.</p>
-  </div>
-
-  <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px; align-items: start;">
+<div class="page">
+<div class="bg-image"></div>
+<main class="main" style="max-width: 1200px; margin: 0 auto; padding-top: 40px;">
     
-    <div>
-      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eaeaea; padding-bottom: 15px; margin-bottom: 25px;">
-        <h2 style="margin: 0; font-size: 20px; color: #222;">Items</h2>
-        <span style="background: #f0f0f0; padding: 6px 14px; border-radius: 20px; font-size: 14px; font-weight: bold; color: #555;"><?php echo $item_count; ?> items</span>
-      </div>
+    <h1 style="font-family: 'Nunito', sans-serif; font-size: 32px; font-weight: 800; color: #1a1a1a;">Your cart</h1>
+    <p style="color: #666; margin-bottom: 28px;">Review items before you contact sellers or complete checkout.</p>
 
-      <?php if($item_count == 0): ?>
-        <div style="text-align: center; padding: 60px 20px; background: #fff; border-radius: 12px; border: 1px dashed #ccc;">
-          <p style="color: #666; margin-bottom: 20px; font-size: 16px;">Your cart is empty.</p>
-          <a href="browse-page.php" class="maroon-btn" style="padding: 12px 24px; text-decoration: none;">Browse listings</a>
+    <div style="display: flex; gap: 40px; align-items: flex-start;">
+    
+    <div style="flex: 2; background: #fff; border-radius: 16px; padding: 24px; border: 1px solid #e8e0e0;">
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 20px;">
+        <h2 style="font-size: 20px; font-weight: 700;">Items</h2>
+        <span style="background: #f0f0f0; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;"><?php echo $totalItems; ?> items</span>
         </div>
-      <?php else: ?>
-        <div style="display: flex; flex-direction: column; gap: 16px;">
-            <?php
-                while($row = mysqli_fetch_assoc($items_result)): 
-                    $item_price = 0; $price_display = '';
-                    if($row['listingType'] == 'sale'){
-                        $s_query = mysqli_query($connection, "SELECT price FROM sale_listings WHERE listingID = ".$row['listingID']);
-                        $s_row = mysqli_fetch_assoc($s_query);
-                        $item_price = $s_row['price'];
-                        $price_display = '₱' . number_format($item_price, 2);
-                    } else if($row['listingType'] == 'rent'){
-                        $r_query = mysqli_query($connection, "SELECT rentalPricePerDay FROM rental_listings WHERE listingID = ".$row['listingID']);
-                        $r_row = mysqli_fetch_assoc($r_query);
-                        $item_price = $r_row['rentalPricePerDay'];
-                        $price_display = '₱' . number_format($item_price, 2) . ' <span style="font-size:14px; color:#888;">/day</span>';
-                    } else if($row['listingType'] == 'borrow'){
-                        $price_display = '<span style="color:#2e7d32;">Free</span>';
-                    }
-                    $subtotal += ($item_price * $row['quantity']);
-            ?>
-            
-            <div class="feature-card" style="display: flex; justify-content: space-between; align-items: center; padding: 20px;">
-                <div>
-                    <h3 style="margin: 0 0 8px 0; font-size: 18px; color: #222;"><?php echo $row['name']; ?></h3>
-                    <p style="margin: 0; color: #666; font-size: 14px;">For <strong style="text-transform: capitalize;"><?php echo $row['listingType']; ?></strong> &nbsp;|&nbsp; Qty: <?php echo $row['quantity']; ?></p>
-                </div>
-                <div style="text-align: right;">
-                    <div style="font-weight: 800; font-size: 20px; color: #1a1a1a; margin-bottom: 10px;"><?php echo $price_display; ?></div>
-                    <form method="post">
-                        <input type="hidden" name="cartItemID" value="<?php echo $row['cartItemID']; ?>">
-                        <input type="hidden" name="action" value="remove">
-                        <button type="submit" style="background: none; border: none; color: #b3261e; text-decoration: underline; font-weight: bold; font-size: 13px; cursor: pointer;">Remove</button>
-                    </form>
-                </div>
+
+        <?php if($totalItems == 0): ?>
+            <div style="text-align: center; padding: 40px 0; color: #888;">
+            <p style="margin-bottom: 15px;">Your cart is empty. Browse listings to add rentals, purchases, or borrows.</p>
+            <a href="browse.php" style="color: #8B2635; font-weight: 700;">Browse listings &rarr;</a>
             </div>
+        <?php else: ?>
+            
+            <?php while($row = mysqli_fetch_assoc($cartItems)): 
+                // Calculate subtotal
+                $lineTotal = $row['price'] * $row['quantity'];
+                $subtotal += $lineTotal;
+            ?>
+                <div style="display: flex; gap: 20px; border-bottom: 1px solid #eee; padding-bottom: 20px; margin-bottom: 20px;">
+                    <div style="width: 80px; height: 80px; background: #f0f0f0; border-radius: 8px;"></div>
+                    <div style="flex: 1;">
+                        <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 4px;"><?php echo htmlspecialchars($row['title']); ?></h3>
+                        <p style="font-size: 13px; color: #888;">For <?php echo ucfirst($row['type']); ?> · Condition: <?php echo $row['condition_item']; ?></p>
+                        <p style="font-size: 12px; color: #666; margin-top: 4px;">Seller: <?php echo $row['firstName']; ?></p>
+                    </div>
+                    
+                    <div style="font-size: 16px; font-weight: 700;">
+                        <?php if($row['type'] == 'borrow'): ?>
+                            <span style="color: #3a8a3a;">Free</span>
+                        <?php else: ?>
+                            ₱<?php echo number_format($row['price'], 2); ?>
+                        <?php endif; ?>
+                    </div>
+                    
+                    <div>
+                        <a href="cart.php?remove_cart_id=<?php echo $row['cartID']; ?>" style="color: #b3261e; font-size: 14px; font-weight: 600; text-decoration: none;">Remove</a>
+                    </div>
+                </div>
             <?php endwhile; ?>
-        </div>
-      <?php endif; ?>
+
+        <?php endif; ?>
     </div>
 
-    <aside style="background: #fff; padding: 30px; border-radius: 16px; border: 1px solid #eaeaea; box-shadow: 0 8px 24px rgba(0,0,0,0.04); position: sticky; top: 100px;">
-      <h2 style="margin: 0 0 20px 0; border-bottom: 2px solid #eaeaea; padding-bottom: 15px; font-size: 22px;">Order Summary</h2>
-      
-      <div style="display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 16px; color: #555;">
+    <aside style="flex: 1; background: #fff; border-radius: 16px; padding: 24px; border: 1px solid #e8e0e0;">
+        <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee;">Order summary</h2>
+        
+        <div style="display: flex; justify-content: space-between; margin-bottom: 15px; color: #555;">
         <span>Subtotal</span>
-        <span style="font-weight: 600; color: #222;">₱<?php echo number_format($subtotal, 2); ?></span>
-      </div>
-      <div style="display: flex; justify-content: space-between; margin-bottom: 25px; font-size: 16px; color: #555;">
-        <span>Campus handoff</span>
-        <span style="font-weight: 600; color: #2e7d32;">Free</span>
-      </div>
-      
-      <div style="display: flex; justify-content: space-between; border-top: 2px solid #eaeaea; padding-top: 20px; font-weight: 800; font-size: 24px; color: #1a1a1a; margin-bottom: 25px;">
+        <span>₱<?php echo number_format($subtotal, 2); ?></span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px; color: #555;">
+        <span>Estimated campus handoff</span>
+        <span style="color: #3a8a3a; font-weight: 600;">Free</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 30px; font-size: 18px; font-weight: 800; border-top: 1px solid #eee; padding-top: 15px;">
         <span>Total</span>
         <span>₱<?php echo number_format($subtotal, 2); ?></span>
-      </div>
-      
-      <button class="maroon-btn" style="width: 100%; padding: 16px; font-size: 16px;" onclick="alert('Checkout integration coming soon!');">Proceed to Checkout</button>
-      
-      <p style="font-size: 13px; color: #888; text-align: center; margin-top: 20px; line-height: 1.5;">Maroon Market connects you with sellers. Final payment and meetups are arranged directly.</p>
+        </div>
+
+        <button type="button" class="primary-btn" <?php if($totalItems == 0) echo 'disabled style="background: #ccc; cursor: not-allowed;"'; ?>>Proceed to checkout</button>
+        <p style="font-size: 12px; color: #888; text-align: center; margin-top: 15px;">Maroon Market connects you with sellers. Final payment and meetups are arranged between you and the listing owner.</p>
     </aside>
 
-  </div>
+    </div>
 </main>
+</div>
 
 <?php require_once 'includes/footer.php'; ?>

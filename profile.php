@@ -1,89 +1,102 @@
-<?php 
-    $custom_css = 'style.css';
-    session_start();
+<?php
+    require_once 'includes/header.php';
+    include 'readrecords.php';
+
+    // Redirect guest to login
     if(!isset($_SESSION['userID'])){
         header("Location: login.php");
-        exit;
+        exit();
     }
+
+    $userID = $_SESSION['userID'];
     
-    include 'connect.php'; 
-    require_once 'includes/header.php'; 
-    
-    $user_id = $_SESSION['userID'];
-    
-    $listing_query = mysqli_query($connection, "SELECT count(*) as total FROM items WHERE ownerID = $user_id");
-    $listing_stat = mysqli_fetch_assoc($listing_query);
-    
-    $user_query = mysqli_query($connection, "SELECT email, role FROM users WHERE userID = $user_id");
-    $user_data = mysqli_fetch_assoc($user_query);
+    // Get user details
+    $user_sql = "SELECT * FROM users WHERE userID = '$userID'";
+    $user_res = mysqli_query($connection, $user_sql);
+    $user_data = mysqli_fetch_assoc($user_res);
+
+    // Get active listing count
+    $active_listings = getUserListings($connection, $userID, 'active');
+    $active_count = $active_listings ? mysqli_num_rows($active_listings) : 0;
+
+    // Get cart items count safely (Fixed from original code)
+    $cart_sql = "SELECT ci.cartItemID FROM cart_items ci JOIN carts c ON ci.cartID = c.cartID WHERE c.userID = '$userID'";
+    $cart_res = mysqli_query($connection, $cart_sql);
+    $saved_count = $cart_res ? mysqli_num_rows($cart_res) : 0;
 ?>
 
-<main style="max-width: 1000px; margin: 40px auto; padding: 20px;">
-  
-  <div style="margin-bottom: 30px;">
-    <p style="text-transform: uppercase; font-size: 13px; font-weight: bold; color: #888; margin: 0 0 5px 0;">Account</p>
-    <h1 style="color: #8B2635; margin: 0 0 10px 0; font-size: 32px;">Profile Dashboard</h1>
-    <p style="color: #555; font-size: 16px; margin: 0;">Manage your identity and activity across the marketplace.</p>
-  </div>
-
-  <div style="display: flex; flex-direction: column; gap: 30px;">
+<div class="page">
+<div class="bg-image"></div>
+<main style="position: relative; z-index: 10; padding: 60px 20px; max-width: 1000px; margin: 0 auto;">
     
-    <section style="background: #fff; border-radius: 16px; border: 1px solid #eaeaea; box-shadow: 0 8px 24px rgba(0,0,0,0.03); display: flex; flex-wrap: wrap; overflow: hidden;">
-      <div style="padding: 30px; flex: 2; min-width: 300px;">
-        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-          <h2 style="font-size: 28px; margin: 0; color: #222;"><?php echo $_SESSION['firstname']; ?></h2>
-          <span style="background: #e8f5e9; color: #2e7d32; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; border: 1px solid #c8e6c9;">Verified CIT-U</span>
-        </div>
-        <p style="font-size: 16px; color: #555; margin: 0 0 8px 0;"><strong>Email:</strong> <?php echo $user_data['email']; ?></p>
-        <p style="font-size: 16px; color: #555; margin: 0; text-transform: capitalize;"><strong>Role:</strong> <?php echo $user_data['role']; ?></p>
-      </div>
-      
-      <div style="padding: 30px; flex: 1; min-width: 200px; background: #fafafa; border-left: 1px solid #eaeaea; display: flex; flex-direction: column; justify-content: center; gap: 20px;">
-        <div>
-          <div style="font-size: 28px; font-weight: 800; color: #8B2635; line-height: 1;"><?php echo $listing_stat['total']; ?></div>
-          <div style="font-size: 14px; color: #666; font-weight: 600; margin-top: 5px; text-transform: uppercase;">My Items</div>
-        </div>
-        <div>
-          <div style="font-size: 20px; font-weight: 800; color: #2e7d32; line-height: 1;">Active</div>
-          <div style="font-size: 14px; color: #666; font-weight: 600; margin-top: 5px; text-transform: uppercase;">Account Status</div>
-        </div>
-      </div>
-    </section>
+    <header style="margin-bottom: 30px;">
+    <p style="color: #666; font-size: 14px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Account</p>
+    <h1 style="font-family: 'Nunito', sans-serif; font-size: 36px; font-weight: 800; color: #1a1a1a; margin: 0;">Profile</h1>
+    </header>
 
-    <section>
-      <h3 style="color: #8B2635; font-size: 22px; margin-bottom: 20px; border-bottom: 2px solid #eaeaea; padding-bottom: 10px;">Activity Overview</h3>
-      
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+    <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 30px;">
         
-        <article class="feature-card" style="padding: 24px; display: flex; flex-direction: column; cursor: pointer;" onclick="window.location.href='my-listings.php';">
-          <h4 style="font-size: 18px; margin: 0 0 10px 0; color: #222;">My Listings</h4>
-          <p style="font-size: 14px; color: #666; margin: 0 0 20px 0; line-height: 1.5;">Manage the items you've posted to the marketplace.</p>
-          <a href="my-listings.php" style="color: #8B2635; font-weight: bold; text-decoration: none; margin-top: auto; display: inline-flex; align-items: center; gap: 5px;">Open my listings <span style="font-size: 18px;">→</span></a>
-        </article>
+        <section style="background: #fff; border-radius: 16px; padding: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); text-align: center;">
+            <div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #c0a0a0, #8b6060); display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 800; color: white; margin: 0 auto 20px;">
+                <?php echo strtoupper(substr($user_data['firstName'], 0, 1) . substr($user_data['lastName'], 0, 1)); ?>
+            </div>
+            <h2 style="font-size: 22px; font-weight: 800; color: #1a1a1a; margin-bottom: 4px;"><?php echo htmlspecialchars($user_data['firstName'] . ' ' . $user_data['lastName']); ?></h2>
+            <p style="color: #666; font-size: 14px; margin-bottom: 15px;"><?php echo htmlspecialchars($user_data['email']); ?></p>
+            <div style="display: inline-block; background: #f0f0f0; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; color: #555; margin-bottom: 25px;">
+                Verified <?php echo ucfirst(htmlspecialchars($user_data['role'])); ?>
+            </div>
 
-        <article class="feature-card" style="padding: 24px; display: flex; flex-direction: column; cursor: pointer;" onclick="window.location.href='seller-dashboard.php';">
-          <h4 style="font-size: 18px; margin: 0 0 10px 0; color: #222;">Seller Dashboard</h4>
-          <p style="font-size: 14px; color: #666; margin: 0 0 20px 0; line-height: 1.5;">Review requests from buyers or renters.</p>
-          <a href="seller-dashboard.php" style="color: #8B2635; font-weight: bold; text-decoration: none; margin-top: auto; display: inline-flex; align-items: center; gap: 5px;">Open seller dashboard <span style="font-size: 18px;">→</span></a>
-        </article>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <a href="edit-profile.php" style="display: block; width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; color: #1a1a1a; text-decoration: none; font-weight: 700; transition: 0.2s;">Edit Profile</a>
+                <a href="list-item.php" style="display: block; width: 100%; padding: 12px; border-radius: 8px; background: #8B2635; color: #fff; text-decoration: none; font-weight: 700; transition: 0.2s;">New Listing</a>
+                <?php if($user_data['role'] == 'admin'): ?>
+                    <a href="admin.php" style="display: block; width: 100%; padding: 12px; border-radius: 8px; background: #1a1a1a; color: #fff; text-decoration: none; font-weight: 700; transition: 0.2s;">Moderate Listings</a>
+                <?php endif; ?>
+            </div>
+        </section>
 
-        <article class="feature-card" style="padding: 24px; display: flex; flex-direction: column; cursor: pointer;" onclick="window.location.href='transaction-history.php';">
-          <h4 style="font-size: 18px; margin: 0 0 10px 0; color: #222;">Transaction History</h4>
-          <p style="font-size: 14px; color: #666; margin: 0 0 20px 0; line-height: 1.5;">Track your past purchases, rentals, and borrowed items.</p>
-          <a href="transaction-history.php" style="color: #8B2635; font-weight: bold; text-decoration: none; margin-top: auto; display: inline-flex; align-items: center; gap: 5px;">View history <span style="font-size: 18px;">→</span></a>
-        </article>
-        
-        <?php if($user_data['role'] == 'admin'): ?>
-        <article class="feature-card" style="padding: 24px; display: flex; flex-direction: column; background: #fff5f5; border-color: #f5d0d0; cursor: pointer;" onclick="window.location.href='admin.php';">
-          <h4 style="font-size: 18px; margin: 0 0 10px 0; color: #b3261e;">Admin Moderation</h4>
-          <p style="font-size: 14px; color: #666; margin: 0 0 20px 0; line-height: 1.5;">Approve or reject pending marketplace submissions.</p>
-          <a href="admin.php" style="color: #b3261e; font-weight: bold; text-decoration: none; margin-top: auto; display: inline-flex; align-items: center; gap: 5px;">Open admin panel <span style="font-size: 18px;">→</span></a>
-        </article>
-        <?php endif; ?>
-        
-      </div>
-    </section>
-  </div>
+        <div style="display: flex; flex-direction: column; gap: 30px;">
+            <section style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                <div style="background: #fff; border-radius: 16px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); text-align: center;">
+                    <div style="font-size: 32px; font-weight: 800; color: #8B2635;"><?php echo $active_count; ?></div>
+                    <div style="font-size: 13px; color: #666; font-weight: 600; text-transform: uppercase;">Active Listings</div>
+                </div>
+                <div style="background: #fff; border-radius: 16px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); text-align: center;">
+                    <div style="font-size: 32px; font-weight: 800; color: #8B2635;"><?php echo $saved_count; ?></div>
+                    <div style="font-size: 13px; color: #666; font-weight: 600; text-transform: uppercase;">Items in Cart</div>
+                </div>
+                <div style="background: #fff; border-radius: 16px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); text-align: center;">
+                    <div style="font-size: 32px; font-weight: 800; color: #1f7a34;">100%</div>
+                    <div style="font-size: 13px; color: #666; font-weight: 600; text-transform: uppercase;">Trust Rating</div>
+                </div>
+            </section>
+
+            <section style="background: #fff; border-radius: 16px; padding: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
+                <h3 style="font-size: 18px; font-weight: 800; color: #1a1a1a; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">Activity Dashboard</h3>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <a href="my-listings.php" style="display: block; padding: 20px; border: 1px solid #e8d3d3; border-radius: 12px; text-decoration: none; color: inherit; transition: 0.2s;" onmouseover="this.style.borderColor='#8B2635'" onmouseout="this.style.borderColor='#e8d3d3'">
+                        <h4 style="font-size: 16px; font-weight: 700; color: #1a1a1a; margin-bottom: 5px;">My Listings &rarr;</h4>
+                        <p style="font-size: 13px; color: #666; margin: 0;">Manage items you've posted.</p>
+                    </a>
+                    <a href="seller-dashboard.php" style="display: block; padding: 20px; border: 1px solid #e8d3d3; border-radius: 12px; text-decoration: none; color: inherit; transition: 0.2s;" onmouseover="this.style.borderColor='#8B2635'" onmouseout="this.style.borderColor='#e8d3d3'">
+                        <h4 style="font-size: 16px; font-weight: 700; color: #1a1a1a; margin-bottom: 5px;">Seller Dashboard &rarr;</h4>
+                        <p style="font-size: 13px; color: #666; margin: 0;">Track incoming buyer requests.</p>
+                    </a>
+                    <a href="transaction-history.php" style="display: block; padding: 20px; border: 1px solid #e8d3d3; border-radius: 12px; text-decoration: none; color: inherit; transition: 0.2s;" onmouseover="this.style.borderColor='#8B2635'" onmouseout="this.style.borderColor='#e8d3d3'">
+                        <h4 style="font-size: 16px; font-weight: 700; color: #1a1a1a; margin-bottom: 5px;">Transaction History &rarr;</h4>
+                        <p style="font-size: 13px; color: #666; margin: 0;">View past purchases and sales.</p>
+                    </a>
+                    <a href="fines.php" style="display: block; padding: 20px; border: 1px solid #e8d3d3; border-radius: 12px; text-decoration: none; color: inherit; transition: 0.2s;" onmouseover="this.style.borderColor='#8B2635'" onmouseout="this.style.borderColor='#e8d3d3'">
+                        <h4 style="font-size: 16px; font-weight: 700; color: #1a1a1a; margin-bottom: 5px;">My Fines &rarr;</h4>
+                        <p style="font-size: 13px; color: #666; margin: 0;">Manage penalties from late returns.</p>
+                    </a>
+                </div>
+            </section>
+        </div>
+    </div>
+
 </main>
+</div>
 
 <?php require_once 'includes/footer.php'; ?>

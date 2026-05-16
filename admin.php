@@ -1,192 +1,158 @@
-<?php 
-    session_start();
+<?php
+    require_once 'includes/header.php';
+    include 'readrecords.php';
 
-    if(!isset($_SESSION['userID']) || $_SESSION['role'] !== 'admin'){
-        echo "<script>alert('Access Denied. Admins only.'); window.location.href='login.php';</script>";
-        exit;
+    // Security Check: Only allow Admins
+    if(!isset($_SESSION['userID']) || $_SESSION['role'] != 'admin'){
+        header("Location: index.php");
+        exit();
     }
 
-    include 'connect.php'; 
-    require_once 'includes/header.php'; 
-
-    $view = isset($_GET['view']) ? $_GET['view'] : 'listings';
-    $admin_id = $_SESSION['userID'];
-
-    if(isset($_POST['action']) && isset($_POST['submission_id'])){
-        $sub_id = $_POST['submission_id'];
+    $msg = "";
+    
+    // Process Approve/Reject actions
+    if(isset($_GET['action']) && isset($_GET['id'])){
+        $submission_id = intval($_GET['id']);
+        $action = $_GET['action'];
+        $admin_id = $_SESSION['userID'];
+        $now = date('Y-m-d H:i:s');
         
-        if($_POST['action'] == 'approve'){
-            $sub_query = "SELECT * FROM listing_submissions WHERE submissionID = " . $sub_id;
-            $sub_result = mysqli_query($connection, $sub_query);
-            $sub = mysqli_fetch_assoc($sub_result);
-            
-            $item_sql = "INSERT INTO items (ownerID, name, description, category, itemCondition) 
-                         VALUES (".$sub['submitterID'].", '".$sub['title']."', '".$sub['description']."', '".$sub['category']."', '".$sub['itemCondition']."')";
-            mysqli_query($connection, $item_sql);
-            $new_item_id = mysqli_insert_id($connection);
-            
-            $avail_from = $sub['availabilityFrom'] ? "'".$sub['availabilityFrom']."'" : 'NULL';
-            $avail_to = $sub['availabilityTo'] ? "'".$sub['availabilityTo']."'" : 'NULL';
-            
-            $listing_sql = "INSERT INTO listings (itemID, listingType, location, availabilityFrom, availabilityTo) 
-                            VALUES (".$new_item_id.", '".$sub['listingType']."', '".$sub['location']."', ".$avail_from.", ".$avail_to.")";
-            mysqli_query($connection, $listing_sql);
-            $new_listing_id = mysqli_insert_id($connection);
-            
-            if($sub['listingType'] == 'sale'){
-                mysqli_query($connection, "INSERT INTO sale_listings (listingID, price) VALUES (".$new_listing_id.", ".$sub['price'].")");
-            } else if($sub['listingType'] == 'rent'){
-                mysqli_query($connection, "INSERT INTO rental_listings (listingID, fee, deposit, rentalPricePerDay, maxDays) 
-                                           VALUES (".$new_listing_id.", ".$sub['rentalFee'].", ".$sub['depositAmount'].", ".$sub['rentalPricePerDay'].", ".$sub['maxDays'].")");
-            } else if($sub['listingType'] == 'borrow'){
-                mysqli_query($connection, "INSERT INTO borrow_listings (listingID, maxDays) VALUES (".$new_listing_id.", ".$sub['maxDays'].")");
+        if($action == 'reject'){
+            $update_sql = "UPDATE listing_submissions SET status = 'rejected', reviewerID = '$admin_id', reviewedAt = '$now' WHERE submissionID = '$submission_id'";
+            if(mysqli_query($connection, $update_sql)){
+                $msg = "Submission has been rejected.";
             }
+        } 
+        else if($action == 'approve'){
+            // 1. Fetch the submission details
+            $sub_query = mysqli_query($connection, "SELECT * FROM listing_submissions WHERE submissionID = '$submission_id'");
+            $sub = mysqli_fetch_assoc($sub_query);
             
-            mysqli_query($connection, "UPDATE listing_submissions SET status='approved', approvedListingID=".$new_listing_id.", reviewerID=".$admin_id.", reviewedAt=NOW() WHERE submissionID=".$sub_id);
-            echo "<script>alert('Listing approved and published!'); window.location.href='admin.php?view=listings';</script>";
-            
-        } else if($_POST['action'] == 'reject'){
-            mysqli_query($connection, "UPDATE listing_submissions SET status='rejected', reviewerID=".$admin_id.", reviewedAt=NOW() WHERE submissionID=".$sub_id);
-            echo "<script>alert('Listing rejected.'); window.location.href='admin.php?view=listings';</script>";
+            if($sub && $sub['status'] == 'pending'){
+                // Start a transaction to ensure all queries succeed or fail together
+                mysqli_begin_transaction($connection);
+                
+                try {
+                    // 2. Insert into `items` table
+                    $stmt_item = $connection->prepare("INSERT INTO items (ownerID, name, description, category, itemCondition, source) VALUES (?, ?, ?, ?, ?, 'student')");
+                    $stmt_item->bind_param("issss", $sub['submitterID'], $sub['title'], $sub['description'], $sub['category'], $sub['itemCondition']);
+                    $stmt_item->execute();
+                    $new_item_id = $connection->insert_id;
+                    
+                    // 3. Insert into `listings` table (Supertype)
+                    $stmt_list = $connection->prepare("INSERT INTO listings (itemID, listingType, listingStatus, location, availabilityFrom, availabilityTo) VALUES (?, ?, 'active', ?, ?, ?)");
+                    $stmt_list->bind_param("issss", $new_item_id, $sub['listingType'], $sub['location'], $sub['availabilityFrom'], $sub['availabilityTo']);
+                    $stmt_list->execute();
+                    $new_listing_id = $connection->insert_id;
+                    
+                    // 4. Insert into the correct subtype table
+                    if($sub['listingType'] == 'sale'){
+                        $stmt_sub = $connection->prepare("INSERT INTO sale_listings (listingID, price) VALUES (?, ?)");
+                        $stmt_sub->bind_param("id", $new_listing_id, $sub['price']);
+                        $stmt_sub->execute();
+                    } 
+                    else if($sub['listingType'] == 'rental'){
+                        $fee = $sub['rentalFee'] ?? 0;
+                        $dep = $sub['depositAmount'] ?? 0;
+                        $stmt_sub = $connection->prepare("INSERT INTO rental_listings (listingID, fee, deposit, rentalPricePerDay, maxDays) VALUES (?, ?, ?, ?, ?)");
+                        $stmt_sub->bind_param("idddi", $new_listing_id, $fee, $dep, $sub['rentalPricePerDay'], $sub['maxDays']);
+                        $stmt_sub->execute();
+                    } 
+                    else if($sub['listingType'] == 'borrow'){
+                        $stmt_sub = $connection->prepare("INSERT INTO borrow_listings (listingID, maxDays) VALUES (?, ?)");
+                        $stmt_sub->bind_param("ii", $new_listing_id, $sub['maxDays']);
+                        $stmt_sub->execute();
+                    }
+                    
+                    // 5. Update the submission record
+                    $stmt_update = $connection->prepare("UPDATE listing_submissions SET status = 'approved', reviewerID = ?, reviewedAt = ?, approvedListingID = ? WHERE submissionID = ?");
+                    $stmt_update->bind_param("isii", $admin_id, $now, $new_listing_id, $submission_id);
+                    $stmt_update->execute();
+                    
+                    mysqli_commit($connection);
+                    $msg = "Listing successfully approved and published!";
+                    
+                } catch (Exception $e) {
+                    mysqli_rollback($connection);
+                    $msg = "Error approving listing: " . $e->getMessage();
+                }
+            }
         }
     }
 
-    if(isset($_POST['action']) && isset($_POST['target_user_id'])){
-        if($_POST['action'] == 'delete_user'){
-            $target_id = (int)$_POST['target_user_id'];
-            mysqli_query($connection, "UPDATE users SET status = 'inactive' WHERE userID = $target_id");
-            mysqli_query($connection, "UPDATE listings l, items i 
-                                       SET l.listingStatus = 'closed' 
-                                       WHERE l.itemID = i.itemID 
-                                       AND i.ownerID = $target_id");
-                                       
-            echo "<script>alert('User account deactivated and items hidden.'); window.location.href='admin.php?view=users';</script>";
-        }
-    }
+    $pendingListings = getPendingListings($connection);
+    $pendingCount = mysqli_num_rows($pendingListings);
 ?>
 
-<main style="max-width: 1200px; margin: 40px auto; padding: 20px;">
-  <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px;">
+<div class="page">
+<div class="bg-image"></div>
+
+<div style="max-width: 1100px; margin: 0 auto; padding: 40px 18px 60px;">
+    <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom: 20px;">
     <div>
-      <h1 style="color: #8B2635; margin: 0 0 5px 0; font-size: 32px;">System Administration</h1>
-      <p style="color: #666; margin: 0; font-size: 16px;">Manage campus marketplace data and user accounts.</p>
+        <h1 style="margin:0; font-family: 'Nunito', sans-serif; font-weight:800; font-size: 32px; color: #1a1a1a;">Moderate Submissions</h1>
+        <p style="opacity:.85; margin:8px 0 0; color: #555;">Review submissions to generate active campus listings.</p>
     </div>
-    
-    <div style="display: flex; gap: 10px; background: #fff; padding: 6px; border-radius: 8px; border: 1px solid #ddd;">
-        <a href="admin.php?view=listings" style="padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 14px; color: <?php echo $view == 'listings' ? 'white' : '#555'; ?>; background: <?php echo $view == 'listings' ? '#8B2635' : 'transparent'; ?>;">Manage Listings</a>
-        <a href="admin.php?view=users" style="padding: 8px 16px; border-radius: 6px; font-weight: bold; font-size: 14px; color: <?php echo $view == 'users' ? 'white' : '#555'; ?>; background: <?php echo $view == 'users' ? '#8B2635' : 'transparent'; ?>;">Manage Users</a>
+    <div style="display:inline-flex; align-items:center; gap:8px; padding:6px 14px; border-radius:999px; background:#f3f4f6; border:1px solid rgba(0,0,0,.06); font-size: 14px;">
+        <span>Pending</span>
+        <strong><?php echo $pendingCount; ?></strong>
     </div>
-  </div>
+    </div>
 
-  <div class="feature-card" style="padding: 30px;">
-    
-    <?php if($view == 'listings'): ?>
-        <h2 style="font-size: 20px; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">Pending Item Submissions</h2>
-        <?php 
-            $pending_query = "SELECT ls.*, u.firstName, u.lastName FROM listing_submissions ls, users u WHERE ls.submitterID = u.userID AND ls.status = 'pending' ORDER BY ls.createdAt ASC";
-            $pending_result = mysqli_query($connection, $pending_query);
-            if(mysqli_num_rows($pending_result) == 0): 
-        ?>
-            <div style="padding: 40px; text-align: center; color: #666; font-size: 16px;">No pending submissions to review.</div>
-        <?php else: ?>
-            <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr style="border-bottom: 2px solid #eaeaea;">
-                        <th style="text-align: left; padding: 15px 10px; color: #333; font-weight: 800;">Submitter</th>
-                        <th style="text-align: left; padding: 15px 10px; color: #333; font-weight: 800;">Item Details</th>
-                        <th style="text-align: left; padding: 15px 10px; color: #333; font-weight: 800;">Pricing & Type</th>
-                        <th style="text-align: left; padding: 15px 10px; color: #333; font-weight: 800;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php while($row = mysqli_fetch_assoc($pending_result)): ?>
-                    <tr style="border-bottom: 1px solid #f0f0f0;">
-                        <td style="padding: 20px 10px; vertical-align: top;">
-                            <strong style="color: #222; font-size: 16px;"><?php echo $row['firstName'] . " " . $row['lastName']; ?></strong><br>
-                            <span style="color: #888; font-size: 13px;">ID: <?php echo $row['submitterID']; ?></span>
-                        </td>
-                        <td style="padding: 20px 10px; vertical-align: top; max-width: 300px;">
-                            <strong style="color: #8B2635; font-size: 16px;"><?php echo $row['title']; ?></strong><br>
-                            <span style="color: #555; font-size: 14px;"><strong><?php echo ucfirst($row['category']); ?></strong> • <?php echo ucfirst($row['itemCondition']); ?></span><br>
-                            <span style="color: #666; font-size: 13px; display: block; margin-top: 8px;"><?php echo $row['description']; ?></span>
-                        </td>
-                        <td style="padding: 20px 10px; vertical-align: top;">
-                            <span style="background: #f0f0f0; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; text-transform: uppercase; margin-bottom: 8px; display: inline-block;"><?php echo $row['listingType']; ?></span><br>
-                            <?php if($row['listingType'] == 'sale'): ?>
-                                <strong style="font-size: 18px;">₱<?php echo $row['price']; ?></strong>
-                            <?php elseif($row['listingType'] == 'rent'): ?>
-                                <strong style="font-size: 18px;">₱<?php echo $row['rentalPricePerDay']; ?>/day</strong>
-                            <?php else: ?>
-                                <strong style="font-size: 18px; color: #2e7d32;">Free</strong>
-                            <?php endif; ?>
-                        </td>
-                        <td style="padding: 20px 10px; vertical-align: top; display: flex; gap: 10px;">
-                            <form method="post">
-                                <input type="hidden" name="submission_id" value="<?php echo $row['submissionID']; ?>">
-                                <input type="hidden" name="action" value="approve">
-                                <button type="submit" style="padding: 8px 16px; border-radius: 6px; background: #e8f5e9; color: #2e7d32; border: 1px solid #c3e6cb; font-weight: bold; cursor: pointer;">Approve</button>
-                            </form>
-                            <form method="post">
-                                <input type="hidden" name="submission_id" value="<?php echo $row['submissionID']; ?>">
-                                <input type="hidden" name="action" value="reject">
-                                <button type="submit" style="padding: 8px 16px; border-radius: 6px; background: #ffebee; color: #d32f2f; border: 1px solid #ffcdd2; font-weight: bold; cursor: pointer;">Reject</button>
-                            </form>
-                        </td>
-                    </tr>
-                    <?php endwhile; ?>
-                </tbody>
-            </table>
-        <?php endif; ?>
-
-    <?php elseif($view == 'users'): ?>
-        <h2 style="font-size: 20px; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">Registered Users</h2>
-        <?php 
-            // We hide other admins to prevent accidental locking out of the system
-            $users_query = "SELECT * FROM users WHERE role != 'admin' ORDER BY userID DESC";
-            $users_result = mysqli_query($connection, $users_query);
-            if(mysqli_num_rows($users_result) == 0): 
-        ?>
-            <div style="padding: 40px; text-align: center; color: #666; font-size: 16px;">No registered student accounts found.</div>
-        <?php else: ?>
-            <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr style="border-bottom: 2px solid #eaeaea;">
-                        <th style="text-align: left; padding: 15px 10px; color: #333; font-weight: 800;">ID</th>
-                        <th style="text-align: left; padding: 15px 10px; color: #333; font-weight: 800;">Name</th>
-                        <th style="text-align: left; padding: 15px 10px; color: #333; font-weight: 800;">Email & Contact</th>
-                        <th style="text-align: left; padding: 15px 10px; color: #333; font-weight: 800;">Role / Status</th>
-                        <th style="text-align: left; padding: 15px 10px; color: #333; font-weight: 800;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php while($user = mysqli_fetch_assoc($users_result)): ?>
-                    <tr style="border-bottom: 1px solid #f0f0f0;">
-                        <td style="padding: 20px 10px; color: #888; font-weight: bold;"><?php echo $user['userID']; ?></td>
-                        <td style="padding: 20px 10px;">
-                            <strong style="color: #222; font-size: 15px;"><?php echo $user['firstName'] . " " . $user['lastName']; ?></strong>
-                        </td>
-                        <td style="padding: 20px 10px;">
-                            <span style="color: #444; font-size: 14px; display: block;"><?php echo $user['email']; ?></span>
-                            <span style="color: #888; font-size: 13px;"><?php echo $user['contactNumber']; ?></span>
-                        </td>
-                        <td style="padding: 20px 10px;">
-                            <span style="background: #e3f2fd; color: #1565c0; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; text-transform: uppercase;"><?php echo $user['role']; ?></span>
-                        </td>
-                        <td style="padding: 20px 10px;">
-                            <form method="post" onsubmit="return confirm('WARNING: This will permanently delete this user and all their listings. Continue?');">
-                                <input type="hidden" name="target_user_id" value="<?php echo $user['userID']; ?>">
-                                <input type="hidden" name="action" value="delete_user">
-                                <button type="submit" style="padding: 8px 12px; border-radius: 6px; background: #fff5f5; color: #b3261e; border: 1px solid #f5d0d0; font-weight: bold; cursor: pointer; font-size: 13px; transition: background 0.2s;">Delete User</button>
-                            </form>
-                        </td>
-                    </tr>
-                    <?php endwhile; ?>
-                </tbody>
-            </table>
-        <?php endif; ?>
+    <?php if($msg != ""): ?>
+        <div style="background: #f2fbf5; color: #1f7a34; border: 1px solid #b6ddc3; padding: 12px; border-radius: 8px; margin-bottom: 20px;">
+            <?php echo $msg; ?>
+        </div>
     <?php endif; ?>
 
-  </div>
-</main>
+    <div style="background: rgba(255,255,255,.92); border: 1px solid rgba(0,0,0,.08); border-radius: 16px; padding: 24px;">
+    
+    <?php if($pendingCount == 0): ?>
+        <div style="padding: 14px 10px; color: #888;">No pending submissions right now.</div>
+    <?php else: ?>
+        <table id="adminTable" class="table table-striped table-bordered" style="width:100%; margin-top: 10px;">
+            <thead style="background: #8B2635; color: white;">
+            <tr>
+                <th>Item</th>
+                <th>Submitter</th>
+                <th>Details</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php while($row = mysqli_fetch_assoc($pendingListings)): ?>
+                <tr>
+                <td>
+                    <strong><?php echo htmlspecialchars($row['title']); ?></strong><br>
+                    <span style="font-size: 12px; color: #666;"><?php echo ucfirst($row['listingType']); ?></span>
+                </td>
+                <td><?php echo htmlspecialchars($row['firstName'] . ' ' . $row['lastName']); ?></td>
+                <td>
+                    <span style="font-size: 13px;">
+                        Cond: <?php echo ucfirst($row['itemCondition']); ?><br>
+                        <?php if($row['listingType'] == 'sale'): ?>
+                            Price: ₱<?php echo number_format($row['price'], 2); ?>
+                        <?php elseif($row['listingType'] == 'rental'): ?>
+                            Rate: ₱<?php echo number_format($row['rentalPricePerDay'], 2); ?>/day
+                        <?php else: ?>
+                            Max Days: <?php echo $row['maxDays']; ?>
+                        <?php endif; ?>
+                    </span>
+                </td>
+                <td>
+                    <div style="display:flex; gap:8px;">
+                    <a href="admin.php?action=approve&id=<?php echo $row['submissionID']; ?>" style="background:#f2fbf5; border:1px solid #b6ddc3; color:#1f7a34; padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 13px; text-decoration: none;">Approve</a>
+                    <a href="admin.php?action=reject&id=<?php echo $row['submissionID']; ?>" style="background:#fff5f5; border:1px solid #f2c0c0; color:#9b1c1c; padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 13px; text-decoration: none;" onclick="return confirm('Reject this listing?');">Reject</a>
+                    </div>
+                </td>
+                </tr>
+            <?php endwhile; ?>
+            </tbody>
+        </table>
+    <?php endif; ?>
+
+    </div>
+</div>
+</div>
 
 <?php require_once 'includes/footer.php'; ?>

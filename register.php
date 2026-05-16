@@ -1,75 +1,75 @@
-<?php    
-    $custom_css = 'style.css';
-    include 'connect.php'; 
-    require_once 'includes/header.php'; 
+<?php
+    require_once 'includes/header.php';
+    include 'connect.php';
+
+    $msg = "";
+    $msg_color = "";
 
     if(isset($_POST['btnRegister'])){
-        $fname = $_POST['txtFirstname'];
-        $lname = $_POST['txtLastname'];
-        $email = $_POST['txtEmail'];
-        $pwd = $_POST['txtPassword'];
-        $contact = $_POST['txtContact'];
-        
-        $hashed_pwd = password_hash($pwd, PASSWORD_DEFAULT); 
+        $fname = mysqli_real_escape_string($connection, $_POST['txtfirstname']);
+        $lname = mysqli_real_escape_string($connection, $_POST['txtlastname']);
+        $email = mysqli_real_escape_string($connection, $_POST['txtemail']);
+        $password = $_POST['txtpassword'];
         
         $check_sql = "SELECT * FROM users WHERE email='".$email."'";
-        $result = mysqli_query($connection, $check_sql);   
-        $count = mysqli_num_rows($result);
+        $check_result = mysqli_query($connection, $check_sql);
         
-        if($count > 0){
-            echo "<script>alert('Email is already registered. Please log in.');</script>";
+        if(mysqli_num_rows($check_result) > 0) {
+            $msg = "Email is already registered.";
+            $msg_color = "#b3261e"; // Error Red
         } else {
-            $insert_sql = "INSERT INTO users (firstName, lastName, email, passwordHash, contactNumber, role, status) 
-                           VALUES ('".$fname."', '".$lname."', '".$email."', '".$hashed_pwd."', '".$contact."', 'student', 'active')";
-            
-            if(mysqli_query($connection, $insert_sql)){
-                echo "<script>alert('Registration successful! You can now log in.'); window.location.href='login.php';</script>";
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            $sql1 = "INSERT INTO users (firstName, lastName, email, passwordHash, role) 
+                    VALUES ('".$fname."', '".$lname."', '".$email."', '".$hashedPassword."', 'Student')";
+                    
+            if(mysqli_query($connection, $sql1)){
+                $msg = "Registration successful! You can now login.";
+                $msg_color = "#1f7a34"; // Success Green
             } else {
-                echo "<script>alert('Error saving record.');</script>";
+                $msg = "Error: " . mysqli_error($connection);
+                $msg_color = "#b3261e";
             }
         }
     }
 ?>
 
-<main style="display: flex; justify-content: center; align-items: center; min-height: 70vh; padding: 40px 20px;">
-  <div style="background: #fff; padding: 40px; border-radius: 16px; border: 1px solid #eaeaea; width: 100%; max-width: 500px; box-shadow: 0 8px 24px rgba(0,0,0,0.04);">
-    <h2 style="text-align: center; color: #8B2635; margin-bottom: 25px; font-size: 28px;">Create Account</h2>
+<main style="position: relative; z-index: 9999; min-height: 80vh; display: flex; align-items: center; justify-content: center; padding: 40px 20px;">
+<div style="width: 100%; max-width: 480px; background: #fff; border-radius: 16px; box-shadow: 0 15px 40px rgba(0,0,0,0.2); overflow: hidden;">
+    <div style="padding: 40px;">
+    <h2 style="font-family: 'Nunito', sans-serif; font-size: 28px; margin-bottom: 20px; color: #1a1a1a;">Create an Account</h2>
     
-    <form method="post" style="display: flex; flex-direction: column; gap: 16px;">
-      
-      <div style="display: flex; gap: 12px;">
-        <div style="flex: 1;">
-          <label style="font-weight: 600; display: block; margin-bottom: 6px; color: #333;">First Name</label>
-          <input type="text" name="txtFirstname" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px;">
+    <?php if($msg != ""): ?>
+        <div style="color: <?php echo $msg_color; ?>; border: 1px solid <?php echo $msg_color; ?>; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; background: #fafafa;">
+            <?php echo $msg; ?>
         </div>
-        <div style="flex: 1;">
-          <label style="font-weight: 600; display: block; margin-bottom: 6px; color: #333;">Last Name</label>
-          <input type="text" name="txtLastname" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px;">
+    <?php endif; ?>
+
+    <form method="post" style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; gap: 10px;">
+            <div style="flex: 1;">
+                <label style="font-size: 14px; font-weight: 600; color: #1a1a1a;">First Name</label>
+                <input type="text" name="txtfirstname" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit;">
+            </div>
+            <div style="flex: 1;">
+                <label style="font-size: 14px; font-weight: 600; color: #1a1a1a;">Last Name</label>
+                <input type="text" name="txtlastname" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit;">
+            </div>
         </div>
-      </div>
 
-      <div>
-        <label style="font-weight: 600; display: block; margin-bottom: 6px; color: #333;">Email Address</label>
-        <input type="email" name="txtEmail" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px;">
-      </div>
-
-      <div>
-        <label style="font-weight: 600; display: block; margin-bottom: 6px; color: #333;">Contact Number</label>
-        <input type="text" name="txtContact" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px;">
-      </div>
-
-      <div>
-        <label style="font-weight: 600; display: block; margin-bottom: 6px; color: #333;">Password</label>
-        <input type="password" name="txtPassword" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px;">
-      </div>
-
-      <button type="submit" name="btnRegister" class="maroon-btn" style="width: 100%; padding: 14px; font-size: 16px; margin-top: 10px;">Register</button>
-      
-      <div style="text-align: center; margin-top: 15px; font-size: 14px; color: #666;">
-        Already have an account? <a href="login.php" style="color: #8B2635; font-weight: bold;">Log in</a>
-      </div>
+        <label style="font-size: 14px; font-weight: 600; margin-top: 10px; color: #1a1a1a;">Email (CIT-U)</label>
+        <input type="email" name="txtemail" required style="padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit;">
+        
+        <label style="font-size: 14px; font-weight: 600; margin-top: 10px; color: #1a1a1a;">Password</label>
+        <input type="password" name="txtpassword" required style="padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit;">
+        
+        <button type="submit" name="btnRegister" style="margin-top: 20px; background: #8B2635; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: bold; cursor: pointer;">Register</button>
     </form>
-  </div>
+
+    <div style="margin-top: 20px; text-align: center; font-size: 14px; color: #555;">
+        Already have an account? <a href="login.php" style="color: #8B2635; font-weight: 600; text-decoration: none;">Sign in here</a>
+    </div>
+    </div>
+</div>
 </main>
 
 <?php require_once 'includes/footer.php'; ?>
