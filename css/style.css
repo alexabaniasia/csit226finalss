@@ -75,7 +75,7 @@ button { cursor: pointer; font-family: inherit; }
   top: 0;
   left: 0;
   width: 100%;
-  z-index: 1000; 
+  z-index: 99999; 
   box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
 }
 
@@ -150,3 +150,23 @@ button { cursor: pointer; font-family: inherit; }
 /* Brings the Login, Register, and List Item forms to the front */
 .auth-main, .form-section { position: relative; z-index: 10; min-height: 80vh; display: flex; align-items: center; justify-content: center; }
 .auth-card, .form-card { position: relative; z-index: 10; }
+
+/* --- Simple Custom Modal --- */
+.simple-modal-overlay {
+    display: none; /* Hidden by default */
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); z-index: 999999;
+    align-items: center; justify-content: center;
+}
+.simple-modal-box {
+    background: white; padding: 30px; border-radius: 12px;
+    text-align: center; width: 90%; max-width: 400px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+.simple-modal-btn {
+    padding: 10px 20px; border-radius: 8px; cursor: pointer;
+    font-weight: 700; text-decoration: none; display: inline-block;
+    border: none; margin: 10px 5px 0; font-size: 14px;
+}
+.btn-cancel { background: #f0f0f0; color: #555; }
+.btn-proceed { background: #8B2635; color: white; }

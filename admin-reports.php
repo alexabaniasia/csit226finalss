@@ -45,7 +45,7 @@
 
 <div class="page">
 <div class="bg-image"></div>
-<div style="max-width: 1100px; margin: 0 auto; padding: 40px 18px 60px;">
+<div style="position: relative; z-index: 10; max-width: 1100px; margin: 0 auto; padding: 40px 18px 60px;">
     
     <div style="margin-bottom: 24px;">
     <h1 style="margin:0; font-family: 'Nunito', sans-serif; font-weight:800; font-size: 32px; color: #1a1a1a;">Reported Listings</h1>
@@ -61,7 +61,11 @@
     <div style="background: rgba(255,255,255,.95); border: 1px solid rgba(0,0,0,.08); border-radius: 16px; padding: 24px;">
     
     <?php if(mysqli_num_rows($reports_query) == 0): ?>
-        <p style="color: #888;">No active reports to review. The community is safe!</p>
+        <div style="text-align: center; padding: 60px 20px; color: #666; background: #fafafa; border-radius: 12px; border: 1px dashed #ccc;">
+            <svg width="48" height="48" fill="none" stroke="#aaa" stroke-width="1.5" viewBox="0 0 24 24" style="margin-bottom: 12px;"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <h3 style="font-size: 18px; color: #1a1a1a; margin-bottom: 8px;">All Clear!</h3>
+            <p style="font-size: 14px;">There are no active reports to review. The community is safe.</p>
+        </div>
     <?php else: ?>
         <div style="display: grid; gap: 16px;">
             <?php while($report = mysqli_fetch_assoc($reports_query)): ?>
@@ -85,7 +89,7 @@
                         <textarea name="moderatorNote" placeholder="Explain your action (optional)..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; resize: none; font-family: inherit; height: 60px;"></textarea>
                         
                         <div style="display: flex; gap: 6px; margin-top: 4px;">
-                            <a href="view-item.php?id=<?php echo $report['listingID']; ?>" target="_blank" style="flex: 1; text-align: center; background: #1a1a1a; color: #fff; padding: 6px; border-radius: 6px; font-size: 12px; font-weight: 700; text-decoration: none;">View Item</a>
+                            <a href="view-item.php?id=<?php echo $report['listingID']; ?>" target="_blank" style="flex: 1; display: flex; align-items: center; justify-content: center; background: #1a1a1a; color: #fff; padding: 6px; border-radius: 6px; font-size: 12px; font-weight: 700; text-decoration: none;">View Item</a>
                             <button type="submit" name="btnAction" value="delete_listing" style="flex: 1; background: #fce8e6; color: #c5221f; border: 1px solid #f2c0c0; padding: 6px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;" onclick="return confirm('Delete this listing permanently?');">Delete Listing</button>
                             <button type="submit" name="btnAction" value="dismiss" style="flex: 1; background: #fff; color: #666; border: 1px solid #ccc; padding: 6px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">Dismiss</button>
                         </div>
