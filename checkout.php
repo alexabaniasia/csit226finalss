@@ -7,7 +7,6 @@
         exit();
     }
 
-    // Block Admins from accessing marketplace user features
     if(strtolower($_SESSION['role']) == 'admin'){
         header("Location: admin.php");
         exit();
@@ -17,11 +16,9 @@
     $msg = "";
     $msg_type = "";
 
-    // Handle Direct Checkout from view-item.php
     if(isset($_POST['direct_checkout']) && isset($_POST['listing_id'])){
         $listingID = intval($_POST['listing_id']);
         
-        // Get listing and pricing details
         $query = "SELECT l.*, i.ownerID, s.price as salePrice, r.rentalPricePerDay, r.maxDays as rentMaxDays, r.deposit, r.fee, b.maxDays as borrowMaxDays 
                 FROM listings l 
                 JOIN items i ON l.itemID = i.itemID 
@@ -43,18 +40,15 @@
                 $txnType = ($item['listingType'] == 'sale') ? 'sale' : 'returnable';
 
                 if($item['listingType'] == 'sale') $amount = $item['salePrice'];
-                if($item['listingType'] == 'rental') $amount = $item['rentalPricePerDay'] + $item['deposit'] + $item['fee']; // Assuming 1 day upfront for simplicity
+                if($item['listingType'] == 'rental') $amount = $item['rentalPricePerDay'] + $item['deposit'] + $item['fee']; 
 
-                // Start Transaction
                 mysqli_begin_transaction($connection);
                 try {
-                    // 1. Insert into supertype `transactions` table
                     $stmt1 = $connection->prepare("INSERT INTO transactions (listingID, senderID, receiverID, transactionType, status, amount) VALUES (?, ?, ?, ?, 'pending', ?)");
                     $stmt1->bind_param("iiisd", $listingID, $buyerID, $sellerID, $txnType, $amount);
                     $stmt1->execute();
                     $transactionID = $connection->insert_id;
 
-                    // 2. Insert into subtype
                     if($txnType == 'sale'){
                         $stmt2 = $connection->prepare("INSERT INTO sale_transactions (transactionID, finalPrice) VALUES (?, ?)");
                         $stmt2->bind_param("id", $transactionID, $amount);
@@ -77,6 +71,82 @@
                     $msg_type = "error";
                 }
             }
+        }
+    } 
+    elseif(isset($_POST['cart_checkout'])) {
+        $cart_query = mysqli_query($connection, "SELECT cartID FROM carts WHERE userID = '$buyerID'");
+        $cart = mysqli_fetch_assoc($cart_query);
+
+        if($cart) {
+            $cartID = $cart['cartID'];
+            
+            $items_query = "SELECT ci.cartItemID, ci.listingID, ci.quantity, 
+                                l.listingType, i.ownerID,
+                                s.price as salePrice, 
+                                r.rentalPricePerDay, r.maxDays as rentMaxDays, r.deposit, r.fee,
+                                b.maxDays as borrowMaxDays
+                            FROM cart_items ci
+                            JOIN listings l ON ci.listingID = l.listingID
+                            JOIN items i ON l.itemID = i.itemID
+                            LEFT JOIN sale_listings s ON l.listingID = s.listingID
+                            LEFT JOIN rental_listings r ON l.listingID = r.listingID
+                            LEFT JOIN borrow_listings b ON l.listingID = b.listingID
+                            WHERE ci.cartID = '$cartID'";
+            
+            $cart_items = mysqli_query($connection, $items_query);
+
+            if(mysqli_num_rows($cart_items) > 0) {
+                mysqli_begin_transaction($connection);
+                try {
+                    while($item = mysqli_fetch_assoc($cart_items)) {
+                        $listingID = $item['listingID'];
+                        $sellerID = $item['ownerID'];
+                        $quantity = $item['quantity'];
+                        
+                        if($sellerID == $buyerID) continue;
+
+                        $amount = 0;
+                        $txnType = ($item['listingType'] == 'sale') ? 'sale' : 'returnable';
+
+                        if($item['listingType'] == 'sale') $amount = $item['salePrice'] * $quantity;
+                        if($item['listingType'] == 'rental') $amount = ($item['rentalPricePerDay'] + $item['deposit'] + $item['fee']) * $quantity;
+
+                        $stmt1 = $connection->prepare("INSERT INTO transactions (listingID, senderID, receiverID, transactionType, status, amount) VALUES (?, ?, ?, ?, 'pending', ?)");
+                        $stmt1->bind_param("iiisd", $listingID, $buyerID, $sellerID, $txnType, $amount);
+                        $stmt1->execute();
+                        $transactionID = $connection->insert_id;
+
+                        if($txnType == 'sale'){
+                            $stmt2 = $connection->prepare("INSERT INTO sale_transactions (transactionID, finalPrice) VALUES (?, ?)");
+                            $stmt2->bind_param("id", $transactionID, $amount);
+                            $stmt2->execute();
+                        } else {
+                            $maxDays = ($item['listingType'] == 'rental') ? $item['rentMaxDays'] : $item['borrowMaxDays'];
+                            $dueDate = date('Y-m-d', strtotime("+$maxDays days"));
+                            $stmt2 = $connection->prepare("INSERT INTO returnable_transactions (transactionID, dueDate) VALUES (?, ?)");
+                            $stmt2->bind_param("is", $transactionID, $dueDate);
+                            $stmt2->execute();
+                        }
+                    }
+
+                    mysqli_query($connection, "DELETE FROM cart_items WHERE cartID = '$cartID'");
+                    
+                    mysqli_commit($connection);
+                    $msg = "Cart checkout successful! Sellers have been notified.";
+                    $msg_type = "success";
+
+                } catch (Exception $e) {
+                    mysqli_rollback($connection);
+                    $msg = "Error processing your cart: " . $e->getMessage();
+                    $msg_type = "error";
+                }
+            } else {
+                $msg = "Your cart is empty.";
+                $msg_type = "error";
+            }
+        } else {
+            $msg = "No cart found.";
+            $msg_type = "error";
         }
     }
 ?>

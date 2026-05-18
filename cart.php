@@ -2,29 +2,25 @@
     require_once 'includes/header.php';
     include 'readrecords.php';
 
-    // Redirect to login if guest tries to access this page
     if(!isset($_SESSION['userID'])){
         header("Location: login.php");
         exit();
     }
 
-    // Block Admins from accessing marketplace user features
     if(strtolower($_SESSION['role']) == 'admin'){
         header("Location: admin.php");
         exit();
     }
 
-    // Handle removing item from cart
     if(isset($_GET['remove_cart_id'])){
         $cartItemID = intval($_GET['remove_cart_id']);
         $userID = $_SESSION['userID'];
         
-        // Correctly deletes the specific item from the cart_items table
         $delete_sql = "DELETE ci FROM cart_items ci 
                     JOIN carts c ON ci.cartID = c.cartID 
                     WHERE ci.cartItemID = '$cartItemID' AND c.userID = '$userID'";
         mysqli_query($connection, $delete_sql);
-        header("Location: cart.php"); // Refresh page
+        header("Location: cart.php");
         exit();
     }
 
@@ -56,7 +52,6 @@
         <?php else: ?>
             
             <?php while($row = mysqli_fetch_assoc($cartItems)): 
-                // Calculate subtotal
                 $lineTotal = $row['price'] * $row['quantity'];
                 $subtotal += $lineTotal;
             ?>
@@ -77,7 +72,7 @@
                     </div>
                     
                     <div>
-                        <a href="cart.php?remove_cart_id=<?php echo $row['cartID']; ?>" style="color: #b3261e; font-size: 14px; font-weight: 600; text-decoration: none;">Remove</a>
+                        <a href="cart.php?remove_cart_id=<?php echo $row['cartID']; ?>" style="color: #b3261e; font-size: 14px; font-weight: 600; text-decoration: none;" onclick="showModal('Remove this item from your cart?', this.href, event);">Remove</a>
                     </div>
                 </div>
             <?php endwhile; ?>
@@ -101,7 +96,11 @@
         <span>₱<?php echo number_format($subtotal, 2); ?></span>
         </div>
 
-        <button type="button" class="primary-btn" <?php if($totalItems == 0) echo 'disabled style="background: #ccc; cursor: not-allowed;"'; ?>>Proceed to checkout</button>
+        <form action="checkout.php" method="POST" style="margin: 0; padding: 0;">
+            <input type="hidden" name="cart_checkout" value="1">
+            <button type="submit" class="primary-btn" <?php if($totalItems == 0) echo 'disabled style="background: #ccc; cursor: not-allowed; width: 100%;"'; else echo 'style="width: 100%;"'; ?>>Proceed to checkout</button>
+        </form>
+        
         <p style="font-size: 12px; color: #888; text-align: center; margin-top: 15px;">Maroon Market connects you with sellers. Final payment and meetups are arranged between you and the listing owner.</p>
     </aside>
 

@@ -16,7 +16,6 @@
     $userID = $_SESSION['userID'];
     $msg = "";
 
-    // Verify ownership and fetch current data
     $query = "SELECT l.*, i.name, i.description, i.itemCondition 
             FROM listings l 
             JOIN items i ON l.itemID = i.itemID 
@@ -37,12 +36,10 @@
 
         mysqli_begin_transaction($connection);
         try {
-            // Update items table
             $stmt1 = $connection->prepare("UPDATE items SET itemCondition = ?, description = ? WHERE itemID = ?");
             $stmt1->bind_param("ssi", $condition, $description, $item['itemID']);
             $stmt1->execute();
 
-            // Update listings table
             $stmt2 = $connection->prepare("UPDATE listings SET location = ? WHERE listingID = ?");
             $stmt2->bind_param("si", $location, $listingID);
             $stmt2->execute();
@@ -50,7 +47,6 @@
             mysqli_commit($connection);
             $msg = "Listing updated successfully!";
             
-            // Refresh data for form
             $item['location'] = $location;
             $item['itemCondition'] = $condition;
             $item['description'] = $description;

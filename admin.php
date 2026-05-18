@@ -2,7 +2,6 @@
     require_once 'includes/header.php';
     include 'readrecords.php';
 
-    // Security Check: Only allow Admins
     if(!isset($_SESSION['userID']) || $_SESSION['role'] != 'admin'){
         header("Location: index.php");
         exit();
@@ -10,7 +9,6 @@
 
     $msg = "";
     
-    // Process Approve/Reject actions
     if(isset($_GET['action']) && isset($_GET['id'])){
         $submission_id = intval($_GET['id']);
         $action = $_GET['action'];
@@ -24,7 +22,6 @@
             }
         } 
         else if($action == 'approve'){
-            // 1. Fetch the submission details
             $sub_query = mysqli_query($connection, "SELECT * FROM listing_submissions WHERE submissionID = '$submission_id'");
             $sub = mysqli_fetch_assoc($sub_query);
             
@@ -59,6 +56,15 @@
                         $stmt_sub->execute();
                     }
                     
+                    $stmt_img_transfer = $connection->prepare("
+                        INSERT INTO listing_images (listingID, imagePath, sortOrder)
+                        SELECT ?, imagePath, sortOrder 
+                        FROM listing_submission_images 
+                        WHERE submissionID = ?
+                    ");
+                    $stmt_img_transfer->bind_param("ii", $new_listing_id, $submission_id);
+                    $stmt_img_transfer->execute();
+
                     $stmt_update = $connection->prepare("UPDATE listing_submissions SET status = 'approved', reviewerID = ?, reviewedAt = ?, approvedListingID = ? WHERE submissionID = ?");
                     $stmt_update->bind_param("isii", $admin_id, $now, $new_listing_id, $submission_id);
                     $stmt_update->execute();
@@ -141,7 +147,7 @@
                 <td style="padding: 16px 12px;">
                     <div style="display:flex; gap:8px;">
                     <a href="admin.php?action=approve&id=<?php echo $row['submissionID']; ?>" style="background:#e6f4ea; color:#137333; padding: 6px 14px; border-radius: 8px; font-weight: 700; font-size: 13px; text-decoration: none; transition: 0.2s;" onmouseover="this.style.background='#ceead6'" onmouseout="this.style.background='#e6f4ea'">Approve</a>
-                    <a href="admin.php?action=reject&id=<?php echo $row['submissionID']; ?>" style="background:#fce8e6; color:#c5221f; padding: 6px 14px; border-radius: 8px; font-weight: 700; font-size: 13px; text-decoration: none; transition: 0.2s;" onmouseover="this.style.background='#fad2cf'" onmouseout="this.style.background='#fce8e6'" onclick="return confirm('Reject this listing?');">Reject</a>
+                    <a href="admin.php?action=reject&id=<?php echo $row['submissionID']; ?>" style="background:#fce8e6; color:#c5221f; padding: 6px 14px; border-radius: 8px; font-weight: 700; font-size: 13px; text-decoration: none; transition: 0.2s;" onmouseover="this.style.background='#fad2cf'" onmouseout="this.style.background='#fce8e6'" onclick="showModal('Reject this listing?', this.href, event);">Reject</a>
                     </div>
                 </td>
                 </tr>

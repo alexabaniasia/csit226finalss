@@ -2,7 +2,6 @@
     require_once 'includes/header.php';
     include 'connect.php';
 
-    // Security Check: Admins only
     if(!isset($_SESSION['userID']) || strtolower($_SESSION['role']) != 'admin'){
         header("Location: index.php");
         exit();
@@ -10,12 +9,10 @@
 
     $msg = "";
 
-    // Handle user activation/deactivation
     if(isset($_GET['action']) && isset($_GET['id'])){
         $targetID = intval($_GET['id']);
         $action = $_GET['action'];
         
-        // Prevent admin from banning themselves
         if($targetID != $_SESSION['userID']) {
             $new_status = ($action == 'ban') ? 'inactive' : 'active';
             $update_sql = "UPDATE users SET status = '$new_status' WHERE userID = '$targetID'";
@@ -80,7 +77,7 @@
                 <td style="padding: 16px 12px;">
                     <?php if($user['userID'] != $_SESSION['userID']): ?>
                         <?php if($user['status'] == 'active'): ?>
-                            <a href="#" style="background: #fff5f5; border: 1px solid #f2c0c0; color: #c5221f; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 700; text-decoration: none; transition: 0.2s;" onclick="showModal('Are you sure you want to suspend this user? They will not be able to log in.', 'admin-users.php?action=ban&id=<?php echo $user['userID']; ?>');">Suspend</a>
+                            <a href="#" style="background: #fff5f5; border: 1px solid #f2c0c0; color: #c5221f; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 700; text-decoration: none; transition: 0.2s;" onclick="showModal('Are you sure you want to suspend this user? They will not be able to log in.', 'admin-users.php?action=ban&id=<?php echo $user['userID']; ?>', event);">Suspend</a>
                         <?php else: ?>
                             <a href="admin-users.php?action=activate&id=<?php echo $user['userID']; ?>" style="background: #e6f4ea; border: 1px solid #b6ddc3; color: #137333; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 700; text-decoration: none; transition: 0.2s;">Reactivate</a>
                         <?php endif; ?>

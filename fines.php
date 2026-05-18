@@ -10,10 +10,8 @@
     $userID = $_SESSION['userID'];
     $msg = "";
 
-    // Simulate paying a fine
     if(isset($_GET['pay_fine'])){
         $fineID = intval($_GET['pay_fine']);
-        // Only update if the user actually owns the transaction this fine belongs to
         $update_sql = "UPDATE fines f JOIN returnable_transactions rt ON f.transactionID = rt.transactionID JOIN transactions t ON rt.transactionID = t.transactionID SET f.isPaid = 1 WHERE f.fineID = '$fineID' AND t.senderID = '$userID'";
         
         if(mysqli_query($connection, $update_sql)){
@@ -21,7 +19,6 @@
         }
     }
 
-    // Fetch fines for the current user (assuming senderID = borrower/renter who gets fined)
     $fines_query = "SELECT f.fineID, f.amount, f.reason, f.isPaid, i.name as itemName, t.checkoutDate
                     FROM fines f
                     JOIN returnable_transactions rt ON f.transactionID = rt.transactionID
@@ -77,7 +74,7 @@
                     <?php if($row['isPaid']): ?>
                         <span style="font-size: 12px; font-weight: 700; color: #1f7a34; background: #e6f4ea; padding: 4px 10px; border-radius: 12px;">Paid</span>
                     <?php else: ?>
-                        <a href="fines.php?pay_fine=<?php echo $row['fineID']; ?>" style="background: #1a1a1a; color: #fff; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; text-decoration: none;" onclick="return confirm('Confirm payment for this fine?');">Pay Now</a>
+                        <a href="fines.php?pay_fine=<?php echo $row['fineID']; ?>" style="background: #1a1a1a; color: #fff; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; text-decoration: none;" onclick="showModal('Confirm payment for this fine?', this.href, event);">Pay Now</a>
                     <?php endif; ?>
                 </div>
                 </article>

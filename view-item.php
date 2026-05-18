@@ -9,7 +9,6 @@
 
     $id = intval($_GET['id']);
     
-    // Updated query to use the new supertype/subtype schema
     $query = "SELECT l.listingID, l.listingType as type, l.listingStatus as status, l.location,
                     i.name as title, i.itemCondition as `condition`, i.description, 
                     u.firstName, u.lastName, u.userID as ownerID,
@@ -35,7 +34,6 @@
     $img_data = mysqli_fetch_assoc($img_query);
     $main_image = $img_data ? $img_data['imagePath'] : null;
 
-    // Determine values based on type
     $price = 0;
     $maxDays = 0;
     if($item['type'] == 'sale') $price = $item['salePrice'];
@@ -100,17 +98,33 @@
         <?php endif; ?>
         </div>
 
-        <form action="checkout.php" method="POST" style="margin-top: 10px;">
-            <input type="hidden" name="direct_checkout" value="1">
-            <input type="hidden" name="listing_id" value="<?php echo $item['listingID']; ?>">
-            <button type="submit" style="width: 100%; padding: 14px; background: #1a1a1a; color: #fff; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='#8B2635'" onmouseout="this.style.background='#1a1a1a'">
-                <?php 
-                    if($item['type'] == 'sale') echo "Buy Now";
-                    else if($item['type'] == 'rental') echo "Request Rental";
-                    else echo "Request Borrow";
-                ?>
-            </button>
-        </form>
+        <?php if(isset($_GET['error']) && $_GET['error'] == 'own_item'): ?>
+            <div style="color: #b3261e; background: #fff5f5; border: 1px solid #f2c0c0; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 600; margin-top: 10px;">
+                You cannot purchase or add your own item to the cart.
+            </div>
+        <?php endif; ?>
+
+        <div style="display: flex; gap: 12px; margin-top: 10px;">
+            <form action="checkout.php" method="POST" style="flex: 1;">
+                <input type="hidden" name="direct_checkout" value="1">
+                <input type="hidden" name="listing_id" value="<?php echo $item['listingID']; ?>">
+                <button type="submit" style="width: 100%; padding: 14px; background: #1a1a1a; color: #fff; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='#8B2635'" onmouseout="this.style.background='#1a1a1a'">
+                    <?php 
+                        if($item['type'] == 'sale') echo "Buy Now";
+                        else if($item['type'] == 'rental') echo "Request Rental";
+                        else echo "Request Borrow";
+                    ?>
+                </button>
+            </form>
+
+            <form action="add-to-cart.php" method="POST" style="flex: 1;">
+                <input type="hidden" name="add_to_cart" value="1">
+                <input type="hidden" name="listing_id" value="<?php echo $item['listingID']; ?>">
+                <button type="submit" style="width: 100%; padding: 14px; background: #fff; color: #1a1a1a; border: 2px solid #e0dada; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.2s;" onmouseover="this.style.borderColor='#1a1a1a'" onmouseout="this.style.borderColor='#e0dada'">
+                    Add to Cart
+                </button>
+            </form>
+        </div>
 
         <div style="border: 1px solid #e0dada; border-radius: 10px; margin-top: 10px; background: #fafafa; padding: 16px;">
             <div style="font-size: 15px; font-weight: 700; color: #1a1a1a; margin-bottom: 8px;">Item Details</div>

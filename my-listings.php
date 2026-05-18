@@ -7,7 +7,6 @@
         exit();
     }
 
-    // Handle Deletion logic natively in PHP without alerts
     $msg = "";
     if(isset($_GET['delete_id'])){
         $del_id = intval($_GET['delete_id']);
@@ -61,7 +60,7 @@
                 </div>
                 <div>
                     <a href="#" style="color: #666; font-size: 13px; font-weight: 600; margin-right: 15px;">Edit</a>
-                    <a href="my-listings.php?delete_id=<?php echo $row['listingID']; ?>" style="color: #b3261e; font-size: 13px; font-weight: 600;" onclick="return confirm('Are you sure you want to delete this listing?');">Delete</a>
+                    <a href="my-listings.php?delete_id=<?php echo $row['listingID']; ?>" style="color: #b3261e; font-size: 13px; font-weight: 600;" onclick="showModal('Are you sure you want to delete this listing?', this.href, event);">Delete</a>
                 </div>
                 </article>
             <?php endwhile; ?>

@@ -2,13 +2,11 @@
     require_once 'includes/header.php';
     include 'connect.php';
 
-    // Redirect to login if guest tries to access this page
     if(!isset($_SESSION['userID'])){
         header("Location: login.php");
         exit();
     }
 
-    // Block Admins from accessing marketplace user features
     if(strtolower($_SESSION['role']) == 'admin'){
         header("Location: admin.php");
         exit();
@@ -26,7 +24,6 @@
         $condition = $_POST['condition'];
         $location = mysqli_real_escape_string($connection, $_POST['location']);
         
-        // Initialize subtype variables
         $price = "NULL";
         $rentalFee = "NULL";
         $rentalPricePerDay = "NULL";
@@ -46,7 +43,6 @@
             $maxDays = intval($_POST['maxBorrowTime']);
         }
 
-        // Insert into listing_submissions table based on your new schema
         $sql_listing = "INSERT INTO listing_submissions 
                         (submitterID, listingType, title, category, description, itemCondition, location, price, rentalFee, rentalPricePerDay, depositAmount, maxDays, status) 
                         VALUES 
@@ -55,13 +51,9 @@
         if(mysqli_query($connection, $sql_listing)){
             $new_submission_id = mysqli_insert_id($connection);
 
-            // ==========================================
-            // IMAGE UPLOAD LOGIC
-            // ==========================================
             if(isset($_FILES['itemImages']) && !empty($_FILES['itemImages']['name'][0])) {
                 $uploadDir = 'uploads/';
                 
-                // Create directory if it doesn't exist
                 if (!is_dir($uploadDir)) {
                     mkdir($uploadDir, 0777, true);
                 }
@@ -69,17 +61,13 @@
                 $fileCount = count($_FILES['itemImages']['name']);
                 for($i = 0; $i < $fileCount; $i++) {
                     $fileName = basename($_FILES['itemImages']['name'][$i]);
-                    // Create a unique file name to prevent overwriting images with the same name
                     $uniqueFileName = time() . '_' . uniqid() . '_' . preg_replace("/[^a-zA-Z0-9.]/", "", $fileName);
                     $targetFilePath = $uploadDir . $uniqueFileName;
                     $fileType = strtolower(pathinfo($targetFilePath, PATHINFO_EXTENSION));
 
-                    // Allow certain file formats
                     $allowTypes = array('jpg', 'png', 'jpeg', 'gif', 'webp');
                     if(in_array($fileType, $allowTypes)){
-                        // Upload file to server
                         if(move_uploaded_file($_FILES['itemImages']['tmp_name'][$i], $targetFilePath)){
-                            // Insert image path into the database
                             $sortOrder = $i;
                             $stmt_img = $connection->prepare("INSERT INTO listing_submission_images (submissionID, imagePath, sortOrder) VALUES (?, ?, ?)");
                             $stmt_img->bind_param("isi", $new_submission_id, $targetFilePath, $sortOrder);
@@ -218,7 +206,6 @@ function switchType(type) {
     document.getElementById('fields-rental').style.display = (type === 'rental') ? 'flex' : 'none';
 }
 
-// IMAGE PREVIEW SCRIPT
 const fileInput = document.getElementById('fileInput');
 const previewGrid = document.getElementById('previewGrid');
 const uploadZone = document.getElementById('uploadZone');

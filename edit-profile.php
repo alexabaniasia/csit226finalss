@@ -11,7 +11,6 @@
     $msg = "";
     $msg_type = "";
 
-    // Fetch current user data
     $user_query = mysqli_query($connection, "SELECT firstName, lastName, contactNumber FROM users WHERE userID = '$userID'");
     $user = mysqli_fetch_assoc($user_query);
 
@@ -23,10 +22,10 @@
         $update_sql = "UPDATE users SET firstName = '$fname', lastName = '$lname', contactNumber = '$contact' WHERE userID = '$userID'";
         
         if(mysqli_query($connection, $update_sql)){
-            $_SESSION['firstName'] = $fname; // Update session variable
+            $_SESSION['firstName'] = $fname; 
             $msg = "Profile updated successfully!";
             $msg_type = "success";
-            // Refresh data
+            
             $user['firstName'] = $fname;
             $user['lastName'] = $lname;
             $user['contactNumber'] = $contact;

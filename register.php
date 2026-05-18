@@ -16,7 +16,7 @@
         
         if(mysqli_num_rows($check_result) > 0) {
             $msg = "Email is already registered.";
-            $msg_color = "#b3261e"; // Error Red
+            $msg_color = "#b3261e"; 
         } else {
             $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
             $sql1 = "INSERT INTO users (firstName, lastName, email, passwordHash, role) 
@@ -24,7 +24,7 @@
                     
             if(mysqli_query($connection, $sql1)){
                 $msg = "Registration successful! You can now login.";
-                $msg_color = "#1f7a34"; // Success Green
+                $msg_color = "#1f7a34"; 
             } else {
                 $msg = "Error: " . mysqli_error($connection);
                 $msg_color = "#b3261e";

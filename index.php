@@ -1,6 +1,6 @@
 <?php
     require_once 'includes/header.php';
-    include 'readrecords.php'; // Pulls in $resultset_featured natively
+    include 'readrecords.php'; 
 ?>
 
 <section class="hero" style="position: relative; height: 640px; display: flex; flex-direction: column; align-items: center; overflow: hidden;">

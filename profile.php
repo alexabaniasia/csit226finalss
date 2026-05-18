@@ -2,7 +2,6 @@
     require_once 'includes/header.php';
     include 'readrecords.php';
 
-    // Redirect guest to login
     if(!isset($_SESSION['userID'])){
         header("Location: login.php");
         exit();
@@ -10,20 +9,17 @@
 
     $userID = $_SESSION['userID'];
     
-    // Get user details
     $user_sql = "SELECT * FROM users WHERE userID = '$userID'";
     $user_res = mysqli_query($connection, $user_sql);
     $user_data = mysqli_fetch_assoc($user_res);
 
     $isAdmin = (strtolower($user_data['role']) == 'admin');
 
-    // Initialize stats variables
     $stat1_count = 0; $stat1_label = "";
     $stat2_count = 0; $stat2_label = "";
     $stat3_count = 0; $stat3_label = "";
 
     if ($isAdmin) {
-        // --- ADMIN STATS ---
         $pending_listings = getPendingListings($connection);
         $stat1_count = $pending_listings ? mysqli_num_rows($pending_listings) : 0;
         $stat1_label = "Pending Listings";
@@ -36,7 +32,6 @@
         $stat3_count = $users_sql ? mysqli_num_rows($users_sql) : 0;
         $stat3_label = "Total Users";
     } else {
-        // --- STUDENT / USER STATS ---
         $active_listings = getUserListings($connection, $userID, 'active');
         $stat1_count = $active_listings ? mysqli_num_rows($active_listings) : 0;
         $stat1_label = "Active Listings";
@@ -46,7 +41,7 @@
         $stat2_count = $cart_res ? mysqli_num_rows($cart_res) : 0;
         $stat2_label = "Items in Cart";
 
-        $stat3_count = "100%"; // Placeholder for Trust Rating
+        $stat3_count = "100%"; 
         $stat3_label = "Trust Rating";
     }
 ?>

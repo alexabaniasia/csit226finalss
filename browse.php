@@ -1,6 +1,6 @@
 <?php
     require_once 'includes/header.php';
-    include 'readrecords.php'; // Pulls in dynamically filtered $resultset_browse
+    include 'readrecords.php'; 
 ?>
 
 <div class="page">

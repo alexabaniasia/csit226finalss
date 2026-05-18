@@ -15,7 +15,6 @@
     $listingID = intval($_GET['id']);
     $msg = "";
     
-    // Fetch basic listing info to show the user what they are reporting
     $query = mysqli_query($connection, "SELECT i.name FROM listings l JOIN items i ON l.itemID = i.itemID WHERE l.listingID = '$listingID'");
     $item = mysqli_fetch_assoc($query);
 

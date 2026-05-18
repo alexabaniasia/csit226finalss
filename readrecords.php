@@ -5,7 +5,6 @@
         die('Could not connect: ' . mysqli_connect_error());
     }
     
-    // 1. Query for Home Page
     $featured_query = "SELECT l.listingID, l.listingType as type, l.listingStatus as status, 
                             i.name as title, i.itemCondition as `condition`, i.category, 
                             u.firstName, u.lastName,
@@ -23,7 +22,6 @@
                     ORDER BY l.datePosted DESC LIMIT 6";
     $resultset_featured = mysqli_query($connection, $featured_query);
 
-    // 2. Query for Browse Page WITH DYNAMIC FILTERS
     $browse_query = "SELECT l.listingID, l.listingType as type, l.listingStatus as status, 
                             i.name as title, i.itemCondition as `condition`, i.category, 
                             u.firstName, u.lastName,
@@ -39,18 +37,17 @@
                     JOIN users u ON i.ownerID = u.userID 
                     WHERE l.listingStatus = 'active'";
 
-    // -- Apply Search Filter --
     if(isset($_GET['search']) && !empty(trim($_GET['search']))) {
         $search = mysqli_real_escape_string($connection, trim($_GET['search']));
         $browse_query .= " AND (i.name LIKE '%$search%' OR i.description LIKE '%$search%')";
     }
-    // -- Apply Listing Type Filter --
+    
     if(isset($_GET['type']) && is_array($_GET['type']) && count($_GET['type']) > 0) {
         $types = array_map(function($t) use ($connection) { return "'" . mysqli_real_escape_string($connection, $t) . "'"; }, $_GET['type']);
         $types_str = implode(",", $types);
         $browse_query .= " AND l.listingType IN ($types_str)";
     }
-    // -- Apply Category Filter --
+    
     if(isset($_GET['category']) && is_array($_GET['category']) && count($_GET['category']) > 0) {
         $cats = array_map(function($c) use ($connection) { return "'" . mysqli_real_escape_string($connection, $c) . "'"; }, $_GET['category']);
         $cats_str = implode(",", $cats);
@@ -60,7 +57,6 @@
     $browse_query .= " ORDER BY l.datePosted DESC";
     $resultset_browse = mysqli_query($connection, $browse_query);
 
-    // 3. Get User Cart Items
     function getUserCart($conn, $userID) {
         $query = "SELECT ci.cartItemID as cartID, ci.quantity, 
                         l.listingID, l.listingType as type, 
@@ -81,7 +77,6 @@
         return mysqli_query($conn, $query);
     }
 
-    // 4. Fetch listings owned by a specific user
     function getUserListings($conn, $ownerID, $status = 'active') {
         $query = "SELECT l.listingID, l.listingType as type, l.listingStatus as status, 
                         i.name as title, i.itemCondition as condition_item,
@@ -99,21 +94,19 @@
         return mysqli_query($conn, $query);
     }
 
-    // 5. Fetch buyer requests/transactions for a seller
     function getSellerRequests($conn, $sellerID) {
         $query = "SELECT t.transactionID, t.status AS txnStatus, t.amount, 
                         i.name as title, l.listingType as type, 
                         u.firstName AS buyerName 
-                FROM transactions t, listings l, items i, users u 
-                WHERE t.listingID = l.listingID 
-                AND l.itemID = i.itemID 
-                AND t.senderID = u.userID 
-                AND t.receiverID = " . intval($sellerID) . "
+                FROM transactions t
+                JOIN users u ON t.senderID = u.userID
+                LEFT JOIN listings l ON t.listingID = l.listingID
+                LEFT JOIN items i ON l.itemID = i.itemID
+                WHERE t.receiverID = " . intval($sellerID) . "
                 ORDER BY t.checkoutDate DESC";
         return mysqli_query($conn, $query);
     }
 
-    // 6. Fetch pending listings for Admin moderation
     function getPendingListings($conn) {
         $query = "SELECT s.*, u.firstName, u.lastName 
                 FROM listing_submissions s, users u 
@@ -123,17 +116,16 @@
         return mysqli_query($conn, $query);
     }
 
-    // 7. Fetch ALL transactions for a specific user
     function getUserTransactionHistory($conn, $userID) {
         $query = "SELECT t.transactionID, t.amount, t.status AS txnStatus, t.checkoutDate as created_at, 
-                        i.name as title, l.listingType as type, 
+                        t.senderID, i.name as title, l.listingType as type, 
                         sender.firstName AS buyerName, receiver.firstName AS sellerName
-                FROM transactions t, listings l, items i, users sender, users receiver 
-                WHERE t.listingID = l.listingID 
-                AND l.itemID = i.itemID 
-                AND t.senderID = sender.userID 
-                AND t.receiverID = receiver.userID 
-                AND (t.senderID = " . intval($userID) . " OR t.receiverID = " . intval($userID) . ")
+                FROM transactions t
+                JOIN users sender ON t.senderID = sender.userID
+                JOIN users receiver ON t.receiverID = receiver.userID
+                LEFT JOIN listings l ON t.listingID = l.listingID
+                LEFT JOIN items i ON l.itemID = i.itemID
+                WHERE (t.senderID = " . intval($userID) . " OR t.receiverID = " . intval($userID) . ")
                 ORDER BY t.checkoutDate DESC";
         return mysqli_query($conn, $query);
     }
