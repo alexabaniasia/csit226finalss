@@ -10,6 +10,7 @@
         $lname = mysqli_real_escape_string($connection, $_POST['txtlastname']);
         $email = mysqli_real_escape_string($connection, $_POST['txtemail']);
         $password = $_POST['txtpassword'];
+        $contact = mysqli_real_escape_string($connection, $_POST['txtcontact']);
         
         $check_sql = "SELECT * FROM users WHERE email='".$email."'";
         $check_result = mysqli_query($connection, $check_sql);
@@ -19,12 +20,13 @@
             $msg_color = "#b3261e"; 
         } else {
             $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-            $sql1 = "INSERT INTO users (firstName, lastName, email, passwordHash, role) 
-                    VALUES ('".$fname."', '".$lname."', '".$email."', '".$hashedPassword."', 'Student')";
+            
+            $sql1 = "INSERT INTO users (firstName, lastName, email, passwordHash, contactNumber, role) 
+                    VALUES ('".$fname."', '".$lname."', '".$email."', '".$hashedPassword."', '".$contact."', 'Student')";
                     
             if(mysqli_query($connection, $sql1)){
-                $msg = "Registration successful! You can now login.";
-                $msg_color = "#1f7a34"; 
+                header("Location: login.php");
+                exit();
             } else {
                 $msg = "Error: " . mysqli_error($connection);
                 $msg_color = "#b3261e";
@@ -59,10 +61,13 @@
         <label style="font-size: 14px; font-weight: 600; margin-top: 10px; color: #1a1a1a;">Email (CIT-U)</label>
         <input type="email" name="txtemail" required style="padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit;">
         
+        <label style="font-size: 14px; font-weight: 600; margin-top: 10px; color: #1a1a1a;">Contact Number</label>
+        <input type="text" name="txtcontact" required placeholder="09XX XXX XXXX" style="padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit;">
+        
         <label style="font-size: 14px; font-weight: 600; margin-top: 10px; color: #1a1a1a;">Password</label>
         <input type="password" name="txtpassword" required style="padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit;">
         
-        <button type="submit" name="btnRegister" style="margin-top: 20px; background: #8B2635; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: bold; cursor: pointer;">Register</button>
+        <button type="submit" name="btnRegister" style="margin-top: 20px; background: #8B2635; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='#6e1e2a'" onmouseout="this.style.background='#8B2635'">Register</button>
     </form>
 
     <div style="margin-top: 20px; text-align: center; font-size: 14px; color: #555;">

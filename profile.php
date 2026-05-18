@@ -48,7 +48,7 @@
 
 <div class="page">
 <div class="bg-image"></div>
-<main style="position: relative; z-index: 10; padding: 60px 20px; max-width: 1000px; margin: 0 auto;">
+<main style="position: relative; z-index: 10; padding: 0px 20px 60px; max-width: 1000px; margin: 0 auto;">
     
     <header style="margin-bottom: 30px;">
     <p style="color: #666; font-size: 14px; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Account</p>

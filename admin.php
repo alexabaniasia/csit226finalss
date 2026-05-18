@@ -87,7 +87,7 @@
 <div class="page">
 <div class="bg-image"></div>
 
-<div style="position: relative; z-index: 10; max-width: 1100px; margin: 0 auto; padding: 40px 18px 60px;">
+<div style="position: relative; z-index: 10; max-width: 1100px; margin: 0 auto; padding: 0px 18px 60px;">
     
     <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom: 20px;">
         <div>

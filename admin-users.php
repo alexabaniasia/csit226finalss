@@ -29,7 +29,7 @@
 
 <div class="page">
 <div class="bg-image"></div>
-<div style="position: relative; z-index: 10; max-width: 1100px; margin: 0 auto; padding: 40px 18px 60px;">
+<div style="position: relative; z-index: 10; max-width: 1100px; margin: 0 auto; padding: 0px 18px 60px;">
     
     <div style="margin-bottom: 24px;">
     <h1 style="margin:0; font-family: 'Nunito', sans-serif; font-weight:800; font-size: 32px; color: #1a1a1a;">Manage Users</h1>

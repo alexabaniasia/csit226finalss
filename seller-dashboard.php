@@ -32,7 +32,7 @@
 
 <div class="page">
 <div class="bg-image"></div>
-<main style="position: relative; z-index: 10; max-width: 1000px; margin: 0 auto; padding: 60px 20px;">
+<main style="position: relative; z-index: 10; max-width: 1000px; margin: 0 auto; padding: 10px 20px 60px;">
     
     <header style="margin-bottom: 40px; text-align: center;">
         <p style="color: #8B2635; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Dashboard</p>

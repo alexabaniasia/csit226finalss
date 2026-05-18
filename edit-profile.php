@@ -38,7 +38,7 @@
 
 <div class="page">
 <div class="bg-image"></div>
-<main style="position: relative; z-index: 10; padding: 60px 20px; display: flex; justify-content: center;">
+<main style="position: relative; z-index: 10; padding: 10px 20px 60px; display: flex; justify-content: center;">
     <div style="width: 100%; max-width: 500px; background: #fff; padding: 40px; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
     
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">

@@ -95,9 +95,33 @@
     <div style="width: 100%; max-width: 980px; background: rgba(255,255,255,0.98); padding: 40px; border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.15);">
     
     <?php if($msg != ""): ?>
-        <div style="padding: 15px; margin-bottom: 20px; border-radius: 8px; font-weight: 600; <?php echo ($msg_class == 'success') ? 'background: #f2fbf5; color: #1f7a34; border: 1px solid #b6ddc3;' : 'background: #fff5f5; color: #b3261e; border: 1px solid #f2c0c0;'; ?>">
-            <?php echo $msg; ?>
-        </div>
+        <?php if($msg_class == 'success'): ?>
+            <!-- Custom Success Dialog Modal -->
+            <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 999999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+                <div style="background: #fff; padding: 40px; border-radius: 16px; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 20px 40px rgba(0,0,0,0.2); animation: popIn 0.3s ease-out;">
+                    <div style="width: 64px; height: 64px; background: #e6f4ea; color: #137333; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                        <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    </div>
+                    <h3 style="font-family: 'Nunito', sans-serif; font-size: 24px; font-weight: 800; color: #1a1a1a; margin: 0 0 10px 0;">Success!</h3>
+                    <p style="color: #555; margin-bottom: 28px; line-height: 1.5;"><?php echo $msg; ?></p>
+                    <div style="display: flex; gap: 12px; justify-content: center;">
+                        <a href="my-listings.php" style="flex: 1; padding: 12px; background: #f0f0f0; color: #1a1a1a; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 14px; transition: 0.2s;" onmouseover="this.style.background='#e0e0e0'" onmouseout="this.style.background='#f0f0f0'">My Listings</a>
+                        <a href="list-item.php" style="flex: 1; padding: 12px; background: #8B2635; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 14px; transition: 0.2s;" onmouseover="this.style.background='#6e1e2a'" onmouseout="this.style.background='#8B2635'">List Another</a>
+                    </div>
+                </div>
+            </div>
+            <style>
+                @keyframes popIn {
+                    0% { opacity: 0; transform: scale(0.9); }
+                    100% { opacity: 1; transform: scale(1); }
+                }
+            </style>
+        <?php else: ?>
+            <!-- Keep error messages inline so the user can fix the form -->
+            <div style="padding: 15px; margin-bottom: 20px; border-radius: 8px; font-weight: 600; background: #fff5f5; color: #b3261e; border: 1px solid #f2c0c0;">
+                <?php echo $msg; ?>
+            </div>
+        <?php endif; ?>
     <?php endif; ?>
 
     <form method="post" enctype="multipart/form-data">
